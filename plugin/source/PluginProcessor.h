@@ -44,6 +44,9 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    void updateFrequency (double newFrequency);
+    void updateAmplitude (double newAmplitude);
+
 private:
     double getPhaseIncrement (double frequency, double sampleRate) const;
 

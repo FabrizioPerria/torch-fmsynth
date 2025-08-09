@@ -56,13 +56,10 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
     if (slider == &frequencySlider)
     {
-        DBG ("Frequency changed to: " << frequencySlider.getValue());
-        // processorRef.frequency = frequencySlider.getValue();
-        // processorRef.phaseIncrement = processorRef.getPhaseIncrement(processorRef.frequency, processorRef.getSampleRate());
+        processorRef.updateFrequency (frequencySlider.getValue());
     }
     else if (slider == &amplitudeSlider)
     {
-        // processorRef.amplitude = amplitudeSlider.getValue();
-        DBG ("Amplitude changed to: " << amplitudeSlider.getValue());
+        processorRef.updateAmplitude (amplitudeSlider.getValue());
     }
 }

@@ -103,7 +103,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    phaseIncrement = getPhaseIncrement (frequency, sampleRate);
+    updateFrequency (frequency);
+    updateAmplitude (amplitude);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -157,6 +158,17 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             phase[channel] += phaseIncrement;
         }
     }
+}
+
+void AudioPluginAudioProcessor::updateFrequency (double newFrequency)
+{
+    frequency = newFrequency;
+    phaseIncrement = getPhaseIncrement (frequency, getSampleRate());
+}
+
+void AudioPluginAudioProcessor::updateAmplitude (double newAmplitude)
+{
+    amplitude = newAmplitude;
 }
 
 //==============================================================================
