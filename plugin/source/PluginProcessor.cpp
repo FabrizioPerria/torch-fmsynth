@@ -153,7 +153,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            // Generate a sine wave signal
             channelData[sample] = (float) (std::sin (phase[channel]) * amplitude);
             phase[channel] += phaseIncrement;
         }
