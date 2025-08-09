@@ -97,4 +97,4 @@ else()
 endif()
 
 add_subdirectory(src)
-# add_subdirectory(plugin)
+add_subdirectory(plugin)

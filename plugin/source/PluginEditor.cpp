@@ -1,6 +1,9 @@
-#include <JuceHeader.h>
-#include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "PluginProcessor.h"
+#include <JuceHeader.h>
+#include <sstream>
+#include <string>
+#include <torch/torch.h>
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
@@ -24,7 +27,12 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
-    g.drawFittedText ("Hello World!", getLocalBounds(), juce::Justification::centred, 1);
+    torch::Tensor tensor = torch::rand ({ 2, 3 });
+    // Display the tensor as a string in the editor
+    std::ostringstream oss;
+    oss << "Tensor: " << tensor;
+    std::string tensorString = oss.str();
+    g.drawFittedText (tensorString, getLocalBounds(), juce::Justification::centred, 5);
 }
 
 void AudioPluginAudioProcessorEditor::resized()
