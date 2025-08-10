@@ -1,5 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "juce_audio_basics/juce_audio_basics.h"
+#include "juce_core/juce_core.h"
 #include <JuceHeader.h>
 #include <tracer.hpp>
 
@@ -13,10 +15,17 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
 #endif
                           )
-    , frequency (440.0)
+    , notePlaying (-1)
+    , frequency (0.0)
     , phase { 0.0, 0.0 }
     , phaseIncrement (0.0)
     , amplitude (0.5)
+    , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
+    , envelopeValue { 0.0, 0.0 }
+    , envelopeAttack (0.1)
+    , envelopeDecay (0.1)
+    , envelopeSustain (0.7)
+    , envelopeRelease (0.2)
 {
 }
 
@@ -26,10 +35,10 @@ AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
     juce::dsp::Reverb reverb;
 }
 
-double AudioPluginAudioProcessor::getPhaseIncrement (double frequency, double sampleRate) const
+double AudioPluginAudioProcessor::getPhaseIncrement (double currentFrequency, double sampleRate) const
 {
     // Calculate the phase increment based on frequency and sample rate
-    return (2.0 * juce::MathConstants<double>::pi * frequency) / sampleRate;
+    return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate;
 }
 
 //==============================================================================
@@ -103,8 +112,9 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    updateFrequency (frequency);
-    updateAmplitude (amplitude);
+    // updateFrequency (440.0);                     // Default frequency (A4)
+    // updateAmplitude (0.5); // Default amplitude (50%)
+    // setEnvelopeParameters (0.01, 0.1, 0.7, 0.2); // Default ADSR envelope parameters
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -137,16 +147,104 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 }
 
+void AudioPluginAudioProcessor::setEnvelopeParameters (double attack, double decay, double sustain, double release)
+{
+    envelopeAttack = attack;
+    envelopeDecay = decay;
+    envelopeSustain = sustain;
+    envelopeRelease = release;
+}
+
+void AudioPluginAudioProcessor::applyEnvelope (double& sample, double& currentEnvelopeValue, EnvelopeState& currentEnvelopeState)
+{
+    switch (currentEnvelopeState)
+    {
+        case EnvelopeState::Idle:
+            if (notePlaying >= 0)
+            {
+                currentEnvelopeState = EnvelopeState::Attack;
+                DBG ("Idle -> Attack");
+            }
+            currentEnvelopeValue = 0.0;
+            break;
+
+        case EnvelopeState::Attack:
+            if (notePlaying < 0)
+            {
+                currentEnvelopeState = EnvelopeState::Release;
+                DBG ("Attack -> Release");
+            }
+            else if (isGreaterThanOrEqualDouble (currentEnvelopeValue, 1.0))
+            {
+                currentEnvelopeState = EnvelopeState::Decay;
+                DBG ("Attack -> Decay");
+                currentEnvelopeValue = 1.0;
+            }
+            else
+            {
+                currentEnvelopeValue += (1.0 / (envelopeAttack * getSampleRate()));
+            }
+            break;
+
+        case EnvelopeState::Decay:
+            currentEnvelopeValue -= ((currentEnvelopeValue - envelopeSustain) / (envelopeDecay * getSampleRate()));
+            if (isLessThanOrEqualDouble (currentEnvelopeValue, envelopeSustain))
+            {
+                currentEnvelopeValue = envelopeSustain;
+                currentEnvelopeState = EnvelopeState::Sustain;
+                DBG ("Decay -> Sustain");
+            }
+            break;
+
+        case EnvelopeState::Sustain:
+            if (notePlaying < 0)
+            {
+                currentEnvelopeState = EnvelopeState::Release;
+                DBG ("Sustain -> Release");
+            }
+            break;
+
+        case EnvelopeState::Release:
+            currentEnvelopeValue -= (currentEnvelopeValue / (envelopeRelease * getSampleRate()));
+            if (isLessThanOrEqualDouble (currentEnvelopeValue, 0.0))
+            {
+                currentEnvelopeValue = 0.0;
+                currentEnvelopeState = EnvelopeState::Idle;
+                DBG ("Release -> Idle");
+            }
+            break;
+    }
+
+    sample *= currentEnvelopeValue;
+}
+
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    juce::ignoreUnused (midiMessages);
+    for (const auto messageData : midiMessages)
+    {
+        const auto message = messageData.getMessage();
+        if (message.isNoteOn() && notePlaying < 0)
+        {
+            notePlaying = message.getNoteNumber();
+            const auto newFrequency = juce::MidiMessage::getMidiNoteInHertz (notePlaying);
+            updateFrequency (newFrequency);
+            DBG ("Note On: " << notePlaying << ", Frequency: " << newFrequency << ", Amplitude: " << (message.getVelocity() / 127.0));
+        }
+        else if (message.isNoteOff() && notePlaying == message.getNoteNumber())
+        {
+            notePlaying = -1;
+            DBG ("Note Off: " << message.getNoteNumber());
+        }
+    }
 
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    {
         buffer.clear (i, 0, buffer.getNumSamples());
+    }
 
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
     {
@@ -154,7 +252,10 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            channelData[sample] = (float) (std::sin (phase[channel]) * amplitude);
+            auto currentSample = std::sin (phase[channel]) * amplitude;
+            applyEnvelope (currentSample, envelopeValue[channel], envelopeState[channel]);
+
+            channelData[sample] = (float) currentSample;
             phase[channel] += phaseIncrement;
         }
     }

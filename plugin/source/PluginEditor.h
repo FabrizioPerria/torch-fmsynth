@@ -21,10 +21,23 @@ private:
     // access the processor object that created it.
     AudioPluginAudioProcessor& processorRef;
 
-    juce::Slider frequencySlider;
-    juce::Slider amplitudeSlider;
+    // juce::Slider frequencySlider;
     // juce::Label frequencyLabel;
-    // juce::Label amplitudeLabel;
+
+    juce::Slider amplitudeSlider;
+    juce::Label amplitudeLabel;
+
+    juce::Slider attackSlider;
+    juce::Label attackLabel;
+
+    juce::Slider decaySlider;
+    juce::Label decayLabel;
+
+    juce::Slider sustainSlider;
+    juce::Label sustainLabel;
+
+    juce::Slider releaseSlider;
+    juce::Label releaseLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };

@@ -12,16 +12,47 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (400, 300);
-    addAndMakeVisible (frequencySlider);
-    frequencySlider.setRange (20.0, 20000.0, 1.0);
-    frequencySlider.setValue (440.0); // Default frequency
-    frequencySlider.addListener (this);
+    setSize (600, 300);
+    // addAndMakeVisible (frequencySlider);
+    // frequencySlider.setRange (20.0, 20000.0, 1.0);
+    // frequencySlider.setValue (440.0); // Default frequency
+    // frequencySlider.addListener (this);
 
+    addAndMakeVisible (amplitudeLabel);
+    amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
     addAndMakeVisible (amplitudeSlider);
     amplitudeSlider.setRange (0.0, 1.0, 0.01);
-    amplitudeSlider.setValue (0.5); // Default amplitude
+    amplitudeSlider.setValue (processorRef.getAmplitude());
     amplitudeSlider.addListener (this);
+    processorRef.updateAmplitude (amplitudeSlider.getValue());
+
+    addAndMakeVisible (attackLabel);
+    attackLabel.setText ("Attack", juce::dontSendNotification);
+    addAndMakeVisible (attackSlider);
+    attackSlider.setRange (0.01, 1.0, 0.01);
+    attackSlider.setValue (processorRef.getEnvelopeAttack());
+    attackSlider.addListener (this);
+
+    addAndMakeVisible (decayLabel);
+    decayLabel.setText ("Decay", juce::dontSendNotification);
+    addAndMakeVisible (decaySlider);
+    decaySlider.setRange (0.01, 1.0, 0.01);
+    decaySlider.setValue (processorRef.getEnvelopeDecay());
+    decaySlider.addListener (this);
+
+    addAndMakeVisible (sustainLabel);
+    sustainLabel.setText ("Sustain", juce::dontSendNotification);
+    addAndMakeVisible (sustainSlider);
+    sustainSlider.setRange (0.0, 1.0, 0.01);
+    sustainSlider.setValue (processorRef.getEnvelopeSustain());
+    sustainSlider.addListener (this);
+
+    addAndMakeVisible (releaseLabel);
+    releaseLabel.setText ("Release", juce::dontSendNotification);
+    addAndMakeVisible (releaseSlider);
+    releaseSlider.setRange (0.0, 1.0, 0.01);
+    releaseSlider.setValue (processorRef.getEnvelopeRelease());
+    releaseSlider.addListener (this);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -48,18 +79,44 @@ void AudioPluginAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    frequencySlider.setBounds (10, 10, getWidth() - 20, 40);
-    amplitudeSlider.setBounds (10, 60, getWidth() - 20, 40);
+    const auto labelX = 10;
+    auto labelY = 10;
+    const auto height = 40;
+    const auto labelWidth = 80;
+    const auto sliderX = labelX + labelWidth + 10;
+    const auto sliderWidth = getWidth() - sliderX - 20;
+
+    amplitudeLabel.setBounds (labelX, labelY, labelWidth, height);
+    amplitudeSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 60;
+
+    attackLabel.setBounds (labelX, labelY, labelWidth, height);
+    attackSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 40;
+
+    decayLabel.setBounds (labelX, labelY, labelWidth, height);
+    decaySlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 40;
+
+    sustainLabel.setBounds (labelX, labelY, labelWidth, height);
+    sustainSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 40;
+
+    releaseLabel.setBounds (labelX, labelY, labelWidth, height);
+    releaseSlider.setBounds (sliderX, labelY, sliderWidth, height);
 }
 
 void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
-    if (slider == &frequencySlider)
-    {
-        processorRef.updateFrequency (frequencySlider.getValue());
-    }
-    else if (slider == &amplitudeSlider)
+    if (slider == &amplitudeSlider)
     {
         processorRef.updateAmplitude (amplitudeSlider.getValue());
+    }
+    else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
+    {
+        processorRef.setEnvelopeParameters (attackSlider.getValue(),
+                                            decaySlider.getValue(),
+                                            sustainSlider.getValue(),
+                                            releaseSlider.getValue());
     }
 }
