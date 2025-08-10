@@ -6,7 +6,7 @@ class Signal
 {
 public:
     Signal (double (*generateFunc) (double))
-        : phase { 0.0, 0.0 }, phaseIncrement (0.0), frequency (0.0), amplitude (1.0), generate (generateFunc)
+        : enabled (true), phase { 0.0, 0.0 }, phaseIncrement (0.0), frequency (0.0), amplitude (1.0), generate (generateFunc)
     {
     }
 
@@ -33,15 +33,31 @@ public:
 
     double getSample (int channel)
     {
+        if (! enabled)
+            return 0.0;
         double sample = generate (phase[channel]);
         phase[channel] += phaseIncrement;
-
-        // if (phase[channel] >= 1.0)
-        //     phase[channel] -= 1.0; // Wrap phase to [0, 1)
         return sample * amplitude;
     }
 
+    void setEnabled (bool newState)
+    {
+        enabled = newState;
+        if (! enabled)
+        {
+            phase[0] = 0.0;
+            phase[1] = 0.0;
+        }
+    }
+
+    bool isEnabled() const
+    {
+        return enabled;
+    }
+
 private:
+    bool enabled;
+
     double phase[2];
     double phaseIncrement;
     double frequency;

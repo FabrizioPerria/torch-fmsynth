@@ -15,7 +15,8 @@ class Envelope
 {
 public:
     Envelope()
-        : envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
+        : enabled (true)
+        , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
         , envelopeValue { 0.0, 0.0 }
         , envelopeAttack (0.01)
         , envelopeDecay (0.1)
@@ -34,6 +35,9 @@ public:
 
     double getCoefficient (int channel, double sampleRate, bool isNoteOn)
     {
+        if (! enabled)
+            return 1.0;
+
         switch (envelopeState[channel])
         {
             case EnvelopeState::Idle:
@@ -112,7 +116,25 @@ public:
         return envelopeRelease;
     }
 
+    void setEnabled (bool newState)
+    {
+        enabled = newState;
+        if (! enabled)
+        {
+            envelopeState[0] = EnvelopeState::Idle;
+            envelopeState[1] = EnvelopeState::Idle;
+            envelopeValue[0] = 0.0;
+            envelopeValue[1] = 0.0;
+        }
+    }
+
+    bool isEnabled() const
+    {
+        return enabled;
+    }
+
 private:
+    bool enabled;
     EnvelopeState envelopeState[2];
     double envelopeValue[2];
     double envelopeAttack;
