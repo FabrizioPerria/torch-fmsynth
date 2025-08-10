@@ -29,28 +29,28 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     attackLabel.setText ("Attack", juce::dontSendNotification);
     addAndMakeVisible (attackSlider);
     attackSlider.setRange (0.01, 1.0, 0.01);
-    attackSlider.setValue (processorRef.getEnvelopeAttack());
+    attackSlider.setValue (processorRef.getEnvelope().getEnvelopeAttack());
     attackSlider.addListener (this);
 
     addAndMakeVisible (decayLabel);
     decayLabel.setText ("Decay", juce::dontSendNotification);
     addAndMakeVisible (decaySlider);
     decaySlider.setRange (0.01, 1.0, 0.01);
-    decaySlider.setValue (processorRef.getEnvelopeDecay());
+    decaySlider.setValue (processorRef.getEnvelope().getEnvelopeDecay());
     decaySlider.addListener (this);
 
     addAndMakeVisible (sustainLabel);
     sustainLabel.setText ("Sustain", juce::dontSendNotification);
     addAndMakeVisible (sustainSlider);
     sustainSlider.setRange (0.0, 1.0, 0.01);
-    sustainSlider.setValue (processorRef.getEnvelopeSustain());
+    sustainSlider.setValue (processorRef.getEnvelope().getEnvelopeSustain());
     sustainSlider.addListener (this);
 
     addAndMakeVisible (releaseLabel);
     releaseLabel.setText ("Release", juce::dontSendNotification);
     addAndMakeVisible (releaseSlider);
     releaseSlider.setRange (0.0, 1.0, 0.01);
-    releaseSlider.setValue (processorRef.getEnvelopeRelease());
+    releaseSlider.setValue (processorRef.getEnvelope().getEnvelopeRelease());
     releaseSlider.addListener (this);
 }
 
@@ -113,9 +113,9 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
     }
     else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
     {
-        processorRef.setEnvelopeParameters (attackSlider.getValue(),
-                                            decaySlider.getValue(),
-                                            sustainSlider.getValue(),
-                                            releaseSlider.getValue());
+        processorRef.getEnvelope().setEnvelopeParameters (attackSlider.getValue(),
+                                                          decaySlider.getValue(),
+                                                          sustainSlider.getValue(),
+                                                          releaseSlider.getValue());
     }
 }

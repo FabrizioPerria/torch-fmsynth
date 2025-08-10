@@ -17,12 +17,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                           )
     , notePlaying (-1)
     , mainSine (generateSine)
-    , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
-    , envelopeValue { 0.0, 0.0 }
-    , envelopeAttack (0.1)
-    , envelopeDecay (0.1)
-    , envelopeSustain (0.7)
-    , envelopeRelease (0.2)
+    , envelope()
 {
 }
 
@@ -135,77 +130,6 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 }
 
-void AudioPluginAudioProcessor::setEnvelopeParameters (double attack, double decay, double sustain, double release)
-{
-    envelopeAttack = attack;
-    envelopeDecay = decay;
-    envelopeSustain = sustain;
-    envelopeRelease = release;
-}
-
-void AudioPluginAudioProcessor::applyEnvelope (double& sample, double& currentEnvelopeValue, EnvelopeState& currentEnvelopeState)
-{
-    switch (currentEnvelopeState)
-    {
-        case EnvelopeState::Idle:
-            if (notePlaying >= 0)
-            {
-                currentEnvelopeState = EnvelopeState::Attack;
-                DBG ("Idle -> Attack");
-            }
-            currentEnvelopeValue = 0.0;
-            break;
-
-        case EnvelopeState::Attack:
-            if (notePlaying < 0)
-            {
-                currentEnvelopeState = EnvelopeState::Release;
-                DBG ("Attack -> Release");
-            }
-            else if (isGreaterThanOrEqualDouble (currentEnvelopeValue, 1.0))
-            {
-                currentEnvelopeState = EnvelopeState::Decay;
-                DBG ("Attack -> Decay");
-                currentEnvelopeValue = 1.0;
-            }
-            else
-            {
-                currentEnvelopeValue += (1.0 / (envelopeAttack * getSampleRate()));
-            }
-            break;
-
-        case EnvelopeState::Decay:
-            currentEnvelopeValue -= ((currentEnvelopeValue - envelopeSustain) / (envelopeDecay * getSampleRate()));
-            if (isLessThanOrEqualDouble (currentEnvelopeValue, envelopeSustain))
-            {
-                currentEnvelopeValue = envelopeSustain;
-                currentEnvelopeState = EnvelopeState::Sustain;
-                DBG ("Decay -> Sustain");
-            }
-            break;
-
-        case EnvelopeState::Sustain:
-            if (notePlaying < 0)
-            {
-                currentEnvelopeState = EnvelopeState::Release;
-                DBG ("Sustain -> Release");
-            }
-            break;
-
-        case EnvelopeState::Release:
-            currentEnvelopeValue -= (currentEnvelopeValue / (envelopeRelease * getSampleRate()));
-            if (isLessThanOrEqualDouble (currentEnvelopeValue, 0.0))
-            {
-                currentEnvelopeValue = 0.0;
-                currentEnvelopeState = EnvelopeState::Idle;
-                DBG ("Release -> Idle");
-            }
-            break;
-    }
-
-    sample *= currentEnvelopeValue;
-}
-
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     for (const auto messageData : midiMessages)
@@ -239,7 +163,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         for (int sample = 0; sample < numSamples; ++sample)
         {
             auto currentSample = mainSine.getSample (channel);
-            applyEnvelope (currentSample, envelopeValue[channel], envelopeState[channel]);
+            currentSample *= envelope.getCoefficient (channel, getSampleRate(), notePlaying >= 0);
 
             channelData[sample] = (float) currentSample;
         }
