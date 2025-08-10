@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Envelope.h"
 #include "SynthSignal.h"
 #include <JuceHeader.h>
 #include <cmath>
@@ -51,14 +50,7 @@ public:
         return mainSine;
     }
 
-    Envelope& getEnvelope()
-    {
-        return envelope;
-    }
-
 private:
-    double getPhaseIncrement (double frequency, double sampleRate) const;
-
     int notePlaying;
 
     static double generateSine (double phase)
@@ -67,7 +59,6 @@ private:
     }
 
     Signal mainSine;
-    Envelope envelope;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

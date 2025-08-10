@@ -7,50 +7,46 @@
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p)
+    : AudioProcessorEditor (&p), processorRef (p), mainSine (p.getMainSine()), envelope (mainSine.getEnvelope())
 {
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (600, 300);
-    // addAndMakeVisible (frequencySlider);
-    // frequencySlider.setRange (20.0, 20000.0, 1.0);
-    // frequencySlider.setValue (440.0); // Default frequency
-    // frequencySlider.addListener (this);
 
     addAndMakeVisible (amplitudeLabel);
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
     addAndMakeVisible (amplitudeSlider);
     amplitudeSlider.setRange (0.0, 1.0, 0.01);
-    amplitudeSlider.setValue (processorRef.getMainSine().getAmplitude());
+    amplitudeSlider.setValue (mainSine.getAmplitude());
     amplitudeSlider.addListener (this);
 
     addAndMakeVisible (attackLabel);
     attackLabel.setText ("Attack", juce::dontSendNotification);
     addAndMakeVisible (attackSlider);
     attackSlider.setRange (0.01, 1.0, 0.01);
-    attackSlider.setValue (processorRef.getEnvelope().getEnvelopeAttack());
+    attackSlider.setValue (envelope.getEnvelopeAttack());
     attackSlider.addListener (this);
 
     addAndMakeVisible (decayLabel);
     decayLabel.setText ("Decay", juce::dontSendNotification);
     addAndMakeVisible (decaySlider);
     decaySlider.setRange (0.01, 1.0, 0.01);
-    decaySlider.setValue (processorRef.getEnvelope().getEnvelopeDecay());
+    decaySlider.setValue (envelope.getEnvelopeDecay());
     decaySlider.addListener (this);
 
     addAndMakeVisible (sustainLabel);
     sustainLabel.setText ("Sustain", juce::dontSendNotification);
     addAndMakeVisible (sustainSlider);
     sustainSlider.setRange (0.0, 1.0, 0.01);
-    sustainSlider.setValue (processorRef.getEnvelope().getEnvelopeSustain());
+    sustainSlider.setValue (envelope.getEnvelopeSustain());
     sustainSlider.addListener (this);
 
     addAndMakeVisible (releaseLabel);
     releaseLabel.setText ("Release", juce::dontSendNotification);
     addAndMakeVisible (releaseSlider);
     releaseSlider.setRange (0.0, 1.0, 0.01);
-    releaseSlider.setValue (processorRef.getEnvelope().getEnvelopeRelease());
+    releaseSlider.setValue (envelope.getEnvelopeRelease());
     releaseSlider.addListener (this);
 }
 
@@ -113,9 +109,9 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
     }
     else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
     {
-        processorRef.getEnvelope().setEnvelopeParameters (attackSlider.getValue(),
-                                                          decaySlider.getValue(),
-                                                          sustainSlider.getValue(),
-                                                          releaseSlider.getValue());
+        envelope.setEnvelopeParameters (attackSlider.getValue(),
+                                        decaySlider.getValue(),
+                                        sustainSlider.getValue(),
+                                        releaseSlider.getValue());
     }
 }

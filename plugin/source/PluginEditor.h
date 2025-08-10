@@ -21,8 +21,8 @@ private:
     // access the processor object that created it.
     AudioPluginAudioProcessor& processorRef;
 
-    // juce::Slider frequencySlider;
-    // juce::Label frequencyLabel;
+    Signal& mainSine;
+    Envelope& envelope;
 
     juce::Slider amplitudeSlider;
     juce::Label amplitudeLabel;

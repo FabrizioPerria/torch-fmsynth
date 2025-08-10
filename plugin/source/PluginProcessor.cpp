@@ -17,7 +17,6 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                           )
     , notePlaying (-1)
     , mainSine (generateSine)
-    , envelope()
 {
 }
 
@@ -162,9 +161,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            auto currentSample = mainSine.getSample (channel);
-            currentSample *= envelope.getCoefficient (channel, getSampleRate(), notePlaying >= 0);
-
+            auto currentSample = mainSine.getSample (channel, getSampleRate(), notePlaying >= 0);
             channelData[sample] = (float) currentSample;
         }
     }
