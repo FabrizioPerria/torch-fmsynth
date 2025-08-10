@@ -94,6 +94,13 @@ public:
                 }
                 else
                 {
+                    if (! enabled)
+                    {
+                        envelopeState[channel] = EnvelopeState::Idle;
+                        DBG ("Release -> Idle");
+                        envelopeValue[channel] = 0.0;
+                        return 0.0; // If disabled, return 0 immediately
+                    }
                     envelopeValue[channel] -= (envelopeValue[channel] / (envelopeRelease * sampleRate));
                     if (isLessThanOrEqualDouble (envelopeValue[channel], 0.0))
                     {

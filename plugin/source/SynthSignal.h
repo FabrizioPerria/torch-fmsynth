@@ -7,9 +7,38 @@ class Signal
 {
 public:
     Signal (double (*generateFunc) (double))
-        : enabled (true), phase { 0.0, 0.0 }, phaseIncrement (0.0), frequency (0.0), amplitude (1.0), generate (generateFunc), envelope()
+        : enabled (true)
+        , phase { 0.0, 0.0 }
+        , phaseIncrement (0.0)
+        , frequency (0.0)
+        , amplitude (1.0)
+        , generate (generateFunc)
+        , envelope (nullptr)
+        , mod (nullptr)
     {
-        envelope.setEnabled (true);
+    }
+
+    void enableModulation (bool newState, double (*generateFunc) (double))
+    {
+        if (newState)
+        {
+            mod = std::make_unique<Signal> (generateFunc);
+        }
+        else
+        {
+            mod.reset();
+        }
+    }
+    void enableEnvelope (bool newState)
+    {
+        if (newState)
+        {
+            envelope = std::make_unique<Envelope>();
+        }
+        else
+        {
+            envelope.reset();
+        }
     }
 
     void updateFrequency (double newFrequency, double sampleRate)
@@ -40,7 +69,11 @@ public:
         double sample = generate (phase[channel]);
         phase[channel] += phaseIncrement;
 
-        auto envelopeCoefficient = envelope.getCoefficient (channel, sampleRate, isNoteOn);
+        auto envelopeCoefficient = isNoteOn ? 1.0 : 0.0;
+        if (envelope && envelope->isEnabled())
+        {
+            envelopeCoefficient = envelope->getCoefficient (channel, sampleRate, isNoteOn);
+        }
         return sample * amplitude * envelopeCoefficient;
     }
 
@@ -61,7 +94,7 @@ public:
 
     Envelope& getEnvelope()
     {
-        return envelope;
+        return *envelope;
     }
 
 private:
@@ -71,8 +104,9 @@ private:
     double phaseIncrement;
     double frequency;
     double amplitude;
-    // func ptr to generate signal
+
     double (*generate) (double phase);
 
-    Envelope envelope;
+    std::unique_ptr<Envelope> envelope;
+    std::unique_ptr<Signal> mod;
 };

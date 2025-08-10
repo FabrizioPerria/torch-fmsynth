@@ -24,6 +24,10 @@ private:
     Signal& mainSine;
     Envelope& envelope;
 
+    juce::ToggleButton enableSignalButton;
+    juce::ToggleButton enableModulationButton;
+    juce::ToggleButton enableEnvelopeButton;
+
     juce::Slider amplitudeSlider;
     juce::Label amplitudeLabel;
 

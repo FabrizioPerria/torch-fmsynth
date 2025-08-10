@@ -12,7 +12,17 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (600, 300);
+    setSize (600, 400);
+
+    addAndMakeVisible (enableSignalButton);
+    enableSignalButton.setButtonText ("Enable Signal");
+    enableSignalButton.setToggleState (mainSine.isEnabled(), juce::dontSendNotification);
+    enableSignalButton.onClick = [this]() { mainSine.setEnabled (enableSignalButton.getToggleState()); };
+
+    addAndMakeVisible (enableEnvelopeButton);
+    enableEnvelopeButton.setButtonText ("Enable Envelope");
+    enableEnvelopeButton.setToggleState (envelope.isEnabled(), juce::dontSendNotification);
+    enableEnvelopeButton.onClick = [this]() { envelope.setEnabled (enableEnvelopeButton.getToggleState()); };
 
     addAndMakeVisible (amplitudeLabel);
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
@@ -81,9 +91,15 @@ void AudioPluginAudioProcessorEditor::resized()
     const auto sliderX = labelX + labelWidth + 10;
     const auto sliderWidth = getWidth() - sliderX - 20;
 
+    enableSignalButton.setBounds (labelX, labelY, 150, height);
+    labelY += 40;
+
     amplitudeLabel.setBounds (labelX, labelY, labelWidth, height);
     amplitudeSlider.setBounds (sliderX, labelY, sliderWidth, height);
     labelY += 60;
+
+    enableEnvelopeButton.setBounds (labelX, labelY, 150, height);
+    labelY += 40;
 
     attackLabel.setBounds (labelX, labelY, labelWidth, height);
     attackSlider.setBounds (sliderX, labelY, sliderWidth, height);
