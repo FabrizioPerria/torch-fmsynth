@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SynthSignal.h"
 #include <JuceHeader.h>
 #include <cmath>
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -44,16 +45,6 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    void updateFrequency (double newFrequency);
-    void updateAmplitude (double newAmplitude);
-    double getFrequency() const
-    {
-        return frequency;
-    }
-    double getAmplitude() const
-    {
-        return amplitude;
-    }
     double getEnvelopeAttack() const
     {
         return envelopeAttack;
@@ -72,6 +63,11 @@ public:
     }
 
     void setEnvelopeParameters (double attack, double decay, double sustain, double release);
+
+    Signal& getMainSine()
+    {
+        return mainSine;
+    }
 
 private:
     enum class EnvelopeState
@@ -102,10 +98,12 @@ private:
 
     int notePlaying;
 
-    double frequency;
-    double phase[2];
-    double phaseIncrement;
-    double amplitude;
+    static double generateSine (double phase)
+    {
+        return std::sin (phase);
+    }
+
+    Signal mainSine;
 
     EnvelopeState envelopeState[2];
     double envelopeValue[2];

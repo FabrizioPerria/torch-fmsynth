@@ -22,9 +22,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
     addAndMakeVisible (amplitudeSlider);
     amplitudeSlider.setRange (0.0, 1.0, 0.01);
-    amplitudeSlider.setValue (processorRef.getAmplitude());
+    amplitudeSlider.setValue (processorRef.getMainSine().getAmplitude());
     amplitudeSlider.addListener (this);
-    processorRef.updateAmplitude (amplitudeSlider.getValue());
 
     addAndMakeVisible (attackLabel);
     attackLabel.setText ("Attack", juce::dontSendNotification);
@@ -110,7 +109,7 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
     if (slider == &amplitudeSlider)
     {
-        processorRef.updateAmplitude (amplitudeSlider.getValue());
+        processorRef.getMainSine().updateAmplitude (amplitudeSlider.getValue());
     }
     else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
     {

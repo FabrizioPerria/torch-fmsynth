@@ -16,10 +16,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
                           )
     , notePlaying (-1)
-    , frequency (0.0)
-    , phase { 0.0, 0.0 }
-    , phaseIncrement (0.0)
-    , amplitude (0.5)
+    , mainSine (generateSine)
     , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
     , envelopeValue { 0.0, 0.0 }
     , envelopeAttack (0.1)
@@ -33,12 +30,6 @@ AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
     dsp::Gain<float> g;
     juce::dsp::Reverb reverb;
-}
-
-double AudioPluginAudioProcessor::getPhaseIncrement (double currentFrequency, double sampleRate) const
-{
-    // Calculate the phase increment based on frequency and sample rate
-    return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate;
 }
 
 //==============================================================================
@@ -112,9 +103,6 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    // updateFrequency (440.0);                     // Default frequency (A4)
-    // updateAmplitude (0.5); // Default amplitude (50%)
-    // setEnvelopeParameters (0.01, 0.1, 0.7, 0.2); // Default ADSR envelope parameters
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -227,13 +215,11 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         {
             notePlaying = message.getNoteNumber();
             const auto newFrequency = juce::MidiMessage::getMidiNoteInHertz (notePlaying);
-            updateFrequency (newFrequency);
-            DBG ("Note On: " << notePlaying << ", Frequency: " << newFrequency << ", Amplitude: " << (message.getVelocity() / 127.0));
+            mainSine.updateFrequency (newFrequency, getSampleRate());
         }
         else if (message.isNoteOff() && notePlaying == message.getNoteNumber())
         {
             notePlaying = -1;
-            DBG ("Note Off: " << message.getNoteNumber());
         }
     }
 
@@ -252,24 +238,12 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            auto currentSample = std::sin (phase[channel]) * amplitude;
+            auto currentSample = mainSine.getSample (channel);
             applyEnvelope (currentSample, envelopeValue[channel], envelopeState[channel]);
 
             channelData[sample] = (float) currentSample;
-            phase[channel] += phaseIncrement;
         }
     }
-}
-
-void AudioPluginAudioProcessor::updateFrequency (double newFrequency)
-{
-    frequency = newFrequency;
-    phaseIncrement = getPhaseIncrement (frequency, getSampleRate());
-}
-
-void AudioPluginAudioProcessor::updateAmplitude (double newAmplitude)
-{
-    amplitude = newAmplitude;
 }
 
 //==============================================================================
