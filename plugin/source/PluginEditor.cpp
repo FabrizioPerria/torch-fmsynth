@@ -16,7 +16,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (600, 400);
+    setSize (600, 500);
 
     addAndMakeVisible (enableSignalButton);
     enableSignalButton.setButtonText ("Enable Signal");
@@ -67,6 +67,21 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     releaseSlider.setRange (0.0, 1.0, 0.01);
     releaseSlider.setValue (envelope.getEnvelopeRelease());
     releaseSlider.addListener (this);
+
+    addAndMakeVisible (modulationRatioLabel);
+    modulationRatioLabel.setText ("Modulation Ratio", juce::dontSendNotification);
+
+    addAndMakeVisible (modulationRatioSlider);
+    modulationRatioSlider.setRange (0.01, 1.0, 0.01);
+    modulationRatioSlider.setValue (modulation.getModulationRatio());
+    modulationRatioSlider.addListener (this);
+
+    addAndMakeVisible (modulationDepthLabel);
+    modulationDepthLabel.setText ("Modulation Depth", juce::dontSendNotification);
+    addAndMakeVisible (modulationDepthSlider);
+    modulationDepthSlider.setRange (0.0, 10.0, 0.01);
+    modulationDepthSlider.setValue (modulation.getAmplitude());
+    modulationDepthSlider.addListener (this);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -127,13 +142,21 @@ void AudioPluginAudioProcessorEditor::resized()
     labelY += 60;
 
     enableModulationButton.setBounds (labelX, labelY, 150, height);
+    labelY += 40;
+
+    modulationRatioLabel.setBounds (labelX, labelY, labelWidth, height);
+    modulationRatioSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 40;
+
+    modulationDepthLabel.setBounds (labelX, labelY, labelWidth, height);
+    modulationDepthSlider.setBounds (sliderX, labelY, sliderWidth, height);
 }
 
 void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
 {
     if (slider == &amplitudeSlider)
     {
-        processorRef.getMainSine().updateAmplitude (amplitudeSlider.getValue());
+        mainSine.updateAmplitude (amplitudeSlider.getValue());
     }
     else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
     {
@@ -141,5 +164,13 @@ void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
                                         decaySlider.getValue(),
                                         sustainSlider.getValue(),
                                         releaseSlider.getValue());
+    }
+    else if (slider == &modulationRatioSlider)
+    {
+        mainSine.setModulationRatio (modulationRatioSlider.getValue());
+    }
+    else if (slider == &modulationDepthSlider)
+    {
+        modulation.updateAmplitude (modulationDepthSlider.getValue());
     }
 }

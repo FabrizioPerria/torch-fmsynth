@@ -47,7 +47,7 @@ public:
 
     Signal& getMainSine()
     {
-        return mainSine;
+        return *mainSine;
     }
 
 private:
@@ -58,7 +58,7 @@ private:
         return std::sin (phase);
     }
 
-    Signal mainSine;
+    std::unique_ptr<Signal> mainSine;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

@@ -16,7 +16,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
                           )
     , notePlaying (-1)
-    , mainSine (generateSine)
+    , mainSine (nullptr)
 {
 }
 
@@ -97,7 +97,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    mainSine.enableModulation (generateSine);
+    mainSine = std::make_unique<Signal> (generateSine, sampleRate);
+    mainSine->enableModulation (generateSine);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -139,7 +140,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         {
             notePlaying = message.getNoteNumber();
             const auto newFrequency = juce::MidiMessage::getMidiNoteInHertz (notePlaying);
-            mainSine.updateFrequency (newFrequency, getSampleRate());
+            mainSine->updateFrequency (newFrequency);
         }
         else if (message.isNoteOff() && notePlaying == message.getNoteNumber())
         {
@@ -162,7 +163,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            auto currentSample = mainSine.getSample (channel, getSampleRate(), notePlaying >= 0);
+            auto currentSample = mainSine->getSample (channel, notePlaying >= 0);
             channelData[sample] = (float) currentSample;
         }
     }

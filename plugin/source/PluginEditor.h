@@ -26,11 +26,11 @@ private:
     Signal& modulation;
 
     juce::ToggleButton enableSignalButton;
-    juce::ToggleButton enableEnvelopeButton;
-    juce::ToggleButton enableModulationButton;
 
     juce::Slider amplitudeSlider;
     juce::Label amplitudeLabel;
+
+    juce::ToggleButton enableEnvelopeButton;
 
     juce::Slider attackSlider;
     juce::Label attackLabel;
@@ -43,6 +43,14 @@ private:
 
     juce::Slider releaseSlider;
     juce::Label releaseLabel;
+
+    juce::ToggleButton enableModulationButton;
+
+    juce::Label modulationRatioLabel;
+    juce::Slider modulationRatioSlider;
+
+    juce::Label modulationDepthLabel;
+    juce::Slider modulationDepthSlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };

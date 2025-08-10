@@ -6,21 +6,31 @@
 class Signal
 {
 public:
-    Signal (double (*generateFunc) (double))
+    Signal (const Signal&) = delete;
+    Signal (Signal&&) = default;
+    Signal& operator= (const Signal&) = delete;
+    Signal& operator= (Signal&&) = default;
+    Signal (double (*generateFunc) (double), double appSampleRate)
         : enabled (true)
         , phase { 0.0, 0.0 }
         , phaseIncrement (0.0)
         , frequency (0.0)
         , amplitude (1.0)
+        , sampleRate (appSampleRate)
         , generate (generateFunc)
         , envelope (std::make_unique<Envelope>())
         , mod (nullptr)
     {
     }
 
+    void setSampleRate (double newSampleRate)
+    {
+        sampleRate = newSampleRate;
+    }
+
     void enableModulation (double (*generateFunc) (double))
     {
-        mod = std::make_unique<Signal> (generateFunc);
+        mod = std::make_unique<Signal> (generateFunc, sampleRate);
         mod->getEnvelope().setEnabled (false); // Disable envelope for modulation signal
     }
 
@@ -29,14 +39,14 @@ public:
         generate = generateFunc;
     }
 
-    void updateFrequency (double newFrequency, double sampleRate)
+    void updateFrequency (double newFrequency)
     {
         frequency = newFrequency;
 
         if (mod && mod->isEnabled())
         {
-            auto modFrequency = modIndex * newFrequency;
-            mod->updateFrequency (modFrequency, sampleRate);
+            auto modFrequency = modRatio * newFrequency;
+            mod->updateFrequency (modFrequency);
         }
     }
 
@@ -50,27 +60,27 @@ public:
         return amplitude;
     }
 
-    double getPhaseIncrement (double currentFrequency, double sampleRate)
+    double getPhaseIncrement (double currentFrequency)
     {
         return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate;
     }
 
-    double getSample (int channel, double sampleRate, bool isNoteOn)
+    double getSample (int channel, bool isNoteOn)
     {
         if (! enabled || generate == nullptr)
         {
             return 0.0;
         }
 
-        double sample = generate (phase[channel]);
-
         auto modSample = 0.0;
         if (mod && mod->isEnabled())
         {
-            modSample = mod->getSample (channel, sampleRate, true);
+            modSample = mod->getSample (channel, true) * mod->getAmplitude();
         }
-        phaseIncrement = getPhaseIncrement (frequency, sampleRate);
-        phase[channel] += phaseIncrement + modSample * modIndex;
+
+        double sample = generate (phase[channel] + modSample);
+        phaseIncrement = getPhaseIncrement (frequency);
+        phase[channel] += phaseIncrement;
 
         auto envelopeCoefficient = isNoteOn ? 1.0 : 0.0;
         if (envelope && envelope->isEnabled())
@@ -88,6 +98,17 @@ public:
             phase[0] = 0.0;
             phase[1] = 0.0;
         }
+    }
+
+    void setModulationRatio (double newRatio)
+    {
+        modRatio = newRatio;
+        updateFrequency (frequency);
+    }
+
+    double getModulationRatio() const
+    {
+        return modRatio;
     }
 
     bool isEnabled() const
@@ -112,11 +133,12 @@ private:
     double phaseIncrement;
     double frequency;
     double amplitude;
+    double sampleRate;
 
     double (*generate) (double phase);
 
     std::unique_ptr<Envelope> envelope;
     std::unique_ptr<Signal> mod;
 
-    double modIndex = 0.5;
+    double modRatio = 0.5;
 };
