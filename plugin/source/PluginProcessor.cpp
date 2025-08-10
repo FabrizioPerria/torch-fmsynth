@@ -97,7 +97,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    mainSine.enableEnvelope (true);
+    mainSine.enableModulation (generateSine);
 }
 
 void AudioPluginAudioProcessor::releaseResources()

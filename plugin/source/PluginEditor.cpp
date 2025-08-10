@@ -7,7 +7,11 @@
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p), mainSine (p.getMainSine()), envelope (mainSine.getEnvelope())
+    : AudioProcessorEditor (&p)
+    , processorRef (p)
+    , mainSine (p.getMainSine())
+    , envelope (mainSine.getEnvelope())
+    , modulation (mainSine.getModulation())
 {
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
@@ -23,6 +27,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     enableEnvelopeButton.setButtonText ("Enable Envelope");
     enableEnvelopeButton.setToggleState (envelope.isEnabled(), juce::dontSendNotification);
     enableEnvelopeButton.onClick = [this]() { envelope.setEnabled (enableEnvelopeButton.getToggleState()); };
+
+    addAndMakeVisible (enableModulationButton);
+    enableModulationButton.setButtonText ("Enable Modulation");
+    enableModulationButton.setToggleState (modulation.isEnabled(), juce::dontSendNotification);
+    enableModulationButton.onClick = [this]() { modulation.setEnabled (enableModulationButton.getToggleState()); };
 
     addAndMakeVisible (amplitudeLabel);
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
@@ -115,6 +124,9 @@ void AudioPluginAudioProcessorEditor::resized()
 
     releaseLabel.setBounds (labelX, labelY, labelWidth, height);
     releaseSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 60;
+
+    enableModulationButton.setBounds (labelX, labelY, 150, height);
 }
 
 void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
