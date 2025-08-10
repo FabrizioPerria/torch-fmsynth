@@ -86,12 +86,21 @@ public:
                 break;
 
             case EnvelopeState::Release:
-                envelopeValue[channel] -= (envelopeValue[channel] / (envelopeRelease * sampleRate));
-                if (isLessThanOrEqualDouble (envelopeValue[channel], 0.0))
+                if (isNoteOn)
                 {
+                    envelopeState[channel] = EnvelopeState::Attack;
+                    DBG ("Release -> Attack");
                     envelopeValue[channel] = 0.0;
-                    envelopeState[channel] = EnvelopeState::Idle;
-                    DBG ("Release -> Idle");
+                }
+                else
+                {
+                    envelopeValue[channel] -= (envelopeValue[channel] / (envelopeRelease * sampleRate));
+                    if (isLessThanOrEqualDouble (envelopeValue[channel], 0.0))
+                    {
+                        envelopeValue[channel] = 0.0;
+                        envelopeState[channel] = EnvelopeState::Idle;
+                        DBG ("Release -> Idle");
+                    }
                 }
                 break;
         }
