@@ -18,6 +18,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     , notePlaying (-1)
     , mainSine (nullptr)
 {
+    apvts = std::make_unique<juce::AudioProcessorValueTreeState> (*this, nullptr, "Parameters", createParameterLayout());
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -97,7 +98,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    mainSine = std::make_unique<Signal> (generateSine, sampleRate);
+    mainSine = std::make_unique<Signal> (generateSine, sampleRate, "main", *apvts);
     mainSine->enableModulation (generateSine);
 }
 
@@ -163,8 +164,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            auto currentSample = mainSine->getSample (channel, notePlaying >= 0);
-            channelData[sample] = (float) currentSample;
+            channelData[sample] = (float) (mainSine->getSample (channel, notePlaying >= 0));
         }
     }
 }
@@ -201,4 +201,52 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new AudioPluginAudioProcessor();
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_enabled", 1 }, "Main Sine Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_amplitude", 1 },
+                                                             "Main Sine Amplitude",
+                                                             0.0f,
+                                                             1.0f,
+                                                             0.5f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_envelope_enabled", 1 }, "Envelope Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_attack", 1 },
+                                                             "Envelope Attack",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_decay", 1 },
+                                                             "Envelope Decay",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_sustain", 1 },
+                                                             "Envelope Sustain",
+                                                             0.0f,
+                                                             1.0f,
+                                                             0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_release", 1 },
+                                                             "Envelope Release",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_mod_enabled", 1 }, "Modulation Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_modulation_ratio", 1 },
+                                                             "Modulation Ratio",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_mod_amplitude", 1 },
+                                                             "Modulation Depth",
+                                                             0.0f,
+                                                             1.0f,
+                                                             0.5f));
+
+    return layout;
 }

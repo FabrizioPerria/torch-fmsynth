@@ -50,6 +50,18 @@ public:
         return *mainSine;
     }
 
+    juce::AudioParameterFloat* amplitudeParam;
+    juce::AudioParameterFloat* attackParam;
+    juce::AudioParameterFloat* decayParam;
+    juce::AudioParameterFloat* sustainParam;
+    juce::AudioParameterFloat* releaseParam;
+    juce::AudioParameterFloat* modulationRatioParam;
+    juce::AudioParameterFloat* modulationDepthParam;
+
+    juce::AudioParameterBool* enableSignalParam;
+    juce::AudioParameterBool* enableEnvelopeParam;
+    juce::AudioParameterBool* enableModulationParam;
+
 private:
     int notePlaying;
 
@@ -59,6 +71,10 @@ private:
     }
 
     std::unique_ptr<Signal> mainSine;
+
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState> apvts;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

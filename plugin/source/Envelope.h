@@ -1,5 +1,6 @@
 #pragma once
 
+#include "juce_audio_processors/juce_audio_processors.h"
 #include <JuceHeader.h>
 
 enum class EnvelopeState
@@ -14,28 +15,27 @@ enum class EnvelopeState
 class Envelope
 {
 public:
-    Envelope()
-        : enabled (true)
-        , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
-        , envelopeValue { 0.0, 0.0 }
-        , envelopeAttack (0.01)
-        , envelopeDecay (0.1)
-        , envelopeSustain (0.7)
-        , envelopeRelease (0.2)
+    Envelope (juce::String name, juce::AudioProcessorValueTreeState& apvts)
+        : envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }, envelopeValue { 0.0, 0.0 }
     {
+        enabled = dynamic_cast<juce::AudioParameterBool*> (apvts.getParameter (name + "_envelope_enabled"));
+        envelopeAttack = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_envelope_attack"));
+        envelopeDecay = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_envelope_decay"));
+        envelopeSustain = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_envelope_sustain"));
+        envelopeRelease = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_envelope_release"));
     }
 
     void setEnvelopeParameters (double attack, double decay, double sustain, double release)
     {
-        envelopeAttack = attack;
-        envelopeDecay = decay;
-        envelopeSustain = sustain;
-        envelopeRelease = release;
+        *envelopeAttack = (float) attack;
+        *envelopeDecay = (float) decay;
+        *envelopeSustain = (float) sustain;
+        *envelopeRelease = (float) release;
     }
 
     double getCoefficient (int channel, double sampleRate, bool isNoteOn)
     {
-        if (! enabled)
+        if (! isEnabled())
             return 1.0;
 
         switch (envelopeState[channel])
@@ -63,15 +63,15 @@ public:
                 }
                 else
                 {
-                    envelopeValue[channel] += (1.0 / (envelopeAttack * sampleRate));
+                    envelopeValue[channel] += (1.0 / (*envelopeAttack * sampleRate));
                 }
                 break;
 
             case EnvelopeState::Decay:
-                envelopeValue[channel] -= ((envelopeValue[channel] - envelopeSustain) / (envelopeDecay * sampleRate));
-                if (isLessThanOrEqualDouble (envelopeValue[channel], envelopeSustain))
+                envelopeValue[channel] -= ((envelopeValue[channel] - *envelopeSustain) / (*envelopeDecay * sampleRate));
+                if (isLessThanOrEqualDouble (envelopeValue[channel], *envelopeSustain))
                 {
-                    envelopeValue[channel] = envelopeSustain;
+                    envelopeValue[channel] = *envelopeSustain;
                     envelopeState[channel] = EnvelopeState::Sustain;
                     DBG ("Decay -> Sustain");
                 }
@@ -94,14 +94,14 @@ public:
                 }
                 else
                 {
-                    if (! enabled)
+                    if (! isEnabled())
                     {
                         envelopeState[channel] = EnvelopeState::Idle;
                         DBG ("Release -> Idle");
                         envelopeValue[channel] = 0.0;
                         return 0.0; // If disabled, return 0 immediately
                     }
-                    envelopeValue[channel] -= (envelopeValue[channel] / (envelopeRelease * sampleRate));
+                    envelopeValue[channel] -= (envelopeValue[channel] / (*envelopeRelease * sampleRate));
                     if (isLessThanOrEqualDouble (envelopeValue[channel], 0.0))
                     {
                         envelopeValue[channel] = 0.0;
@@ -117,25 +117,49 @@ public:
 
     double getEnvelopeAttack() const
     {
-        return envelopeAttack;
+        return *envelopeAttack;
     }
     double getEnvelopeDecay() const
     {
-        return envelopeDecay;
+        return *envelopeDecay;
     }
     double getEnvelopeSustain() const
     {
-        return envelopeSustain;
+        return *envelopeSustain;
     }
     double getEnvelopeRelease() const
+    {
+        return *envelopeRelease;
+    }
+
+    juce::AudioParameterBool* getEnabledParameter() const
+    {
+        return enabled;
+    }
+    juce::AudioParameterFloat* getEnvelopeAttackParameter() const
+    {
+        return envelopeAttack;
+    }
+    juce::AudioParameterFloat* getEnvelopeDecayParameter() const
+    {
+        return envelopeDecay;
+    }
+    juce::AudioParameterFloat* getEnvelopeSustainParameter() const
+    {
+        return envelopeSustain;
+    }
+    juce::AudioParameterFloat* getEnvelopeReleaseParameter() const
     {
         return envelopeRelease;
     }
 
     void setEnabled (bool newState)
     {
-        enabled = newState;
-        if (! enabled)
+        if (enabled == nullptr)
+            return;
+
+        *enabled = newState;
+        if (! isEnabled())
         {
             envelopeState[0] = EnvelopeState::Idle;
             envelopeState[1] = EnvelopeState::Idle;
@@ -146,17 +170,20 @@ public:
 
     bool isEnabled() const
     {
-        return enabled;
+        if (enabled == nullptr)
+            return false;
+        return *enabled;
     }
 
 private:
-    bool enabled;
+    juce::AudioParameterBool* enabled;
+    juce::AudioParameterFloat* envelopeAttack;
+    juce::AudioParameterFloat* envelopeDecay;
+    juce::AudioParameterFloat* envelopeSustain;
+    juce::AudioParameterFloat* envelopeRelease;
+
     EnvelopeState envelopeState[2];
     double envelopeValue[2];
-    double envelopeAttack;
-    double envelopeDecay;
-    double envelopeSustain;
-    double envelopeRelease;
 
     juce::Tolerance<double> tol = juce::Tolerance<double>().withAbsolute (1e-6).withRelative (1e-6);
 

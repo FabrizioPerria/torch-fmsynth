@@ -36,35 +36,45 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (amplitudeLabel);
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
     addAndMakeVisible (amplitudeSlider);
-    amplitudeSlider.setRange (0.0, 1.0, 0.01);
+    amplitudeSlider.setRange (mainSine.getAmplitudeParameter()->getNormalisableRange().start,
+                              mainSine.getAmplitudeParameter()->getNormalisableRange().end,
+                              0.01);
     amplitudeSlider.setValue (mainSine.getAmplitude());
     amplitudeSlider.addListener (this);
 
     addAndMakeVisible (attackLabel);
     attackLabel.setText ("Attack", juce::dontSendNotification);
     addAndMakeVisible (attackSlider);
-    attackSlider.setRange (0.01, 1.0, 0.01);
+    attackSlider.setRange (envelope.getEnvelopeAttackParameter()->getNormalisableRange().start,
+                           envelope.getEnvelopeAttackParameter()->getNormalisableRange().end,
+                           0.01);
     attackSlider.setValue (envelope.getEnvelopeAttack());
     attackSlider.addListener (this);
 
     addAndMakeVisible (decayLabel);
     decayLabel.setText ("Decay", juce::dontSendNotification);
     addAndMakeVisible (decaySlider);
-    decaySlider.setRange (0.01, 1.0, 0.01);
+    decaySlider.setRange (envelope.getEnvelopeDecayParameter()->getNormalisableRange().start,
+                          envelope.getEnvelopeDecayParameter()->getNormalisableRange().end,
+                          0.01);
     decaySlider.setValue (envelope.getEnvelopeDecay());
     decaySlider.addListener (this);
 
     addAndMakeVisible (sustainLabel);
     sustainLabel.setText ("Sustain", juce::dontSendNotification);
     addAndMakeVisible (sustainSlider);
-    sustainSlider.setRange (0.0, 1.0, 0.01);
+    sustainSlider.setRange (envelope.getEnvelopeSustainParameter()->getNormalisableRange().start,
+                            envelope.getEnvelopeSustainParameter()->getNormalisableRange().end,
+                            0.01);
     sustainSlider.setValue (envelope.getEnvelopeSustain());
     sustainSlider.addListener (this);
 
     addAndMakeVisible (releaseLabel);
     releaseLabel.setText ("Release", juce::dontSendNotification);
     addAndMakeVisible (releaseSlider);
-    releaseSlider.setRange (0.0, 1.0, 0.01);
+    releaseSlider.setRange (envelope.getEnvelopeReleaseParameter()->getNormalisableRange().start,
+                            envelope.getEnvelopeReleaseParameter()->getNormalisableRange().end,
+                            0.01);
     releaseSlider.setValue (envelope.getEnvelopeRelease());
     releaseSlider.addListener (this);
 
@@ -72,14 +82,18 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     modulationRatioLabel.setText ("Modulation Ratio", juce::dontSendNotification);
 
     addAndMakeVisible (modulationRatioSlider);
-    modulationRatioSlider.setRange (0.01, 1.0, 0.01);
-    modulationRatioSlider.setValue (modulation.getModulationRatio());
+    modulationRatioSlider.setRange (mainSine.getModulationRatioParameter()->getNormalisableRange().start,
+                                    mainSine.getModulationRatioParameter()->getNormalisableRange().end,
+                                    0.01);
+    modulationRatioSlider.setValue (mainSine.getModulationRatio());
     modulationRatioSlider.addListener (this);
 
     addAndMakeVisible (modulationDepthLabel);
     modulationDepthLabel.setText ("Modulation Depth", juce::dontSendNotification);
     addAndMakeVisible (modulationDepthSlider);
-    modulationDepthSlider.setRange (0.0, 10.0, 0.01);
+    modulationDepthSlider.setRange (modulation.getAmplitudeParameter()->getNormalisableRange().start,
+                                    modulation.getAmplitudeParameter()->getNormalisableRange().end,
+                                    0.01);
     modulationDepthSlider.setValue (modulation.getAmplitude());
     modulationDepthSlider.addListener (this);
 }
