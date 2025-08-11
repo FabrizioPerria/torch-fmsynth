@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SynthSignal.h"
 #include <JuceHeader.h>
 #include <cmath>
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -44,75 +45,32 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    void updateFrequency (double newFrequency);
-    void updateAmplitude (double newAmplitude);
-    double getFrequency() const
-    {
-        return frequency;
-    }
-    double getAmplitude() const
-    {
-        return amplitude;
-    }
-    double getEnvelopeAttack() const
-    {
-        return envelopeAttack;
-    }
-    double getEnvelopeDecay() const
-    {
-        return envelopeDecay;
-    }
-    double getEnvelopeSustain() const
-    {
-        return envelopeSustain;
-    }
-    double getEnvelopeRelease() const
-    {
-        return envelopeRelease;
-    }
+    Signal& getMainSine() { return *mainSine; }
 
-    void setEnvelopeParameters (double attack, double decay, double sustain, double release);
+    juce::AudioParameterFloat* amplitudeParam;
+    juce::AudioParameterFloat* attackParam;
+    juce::AudioParameterFloat* decayParam;
+    juce::AudioParameterFloat* sustainParam;
+    juce::AudioParameterFloat* releaseParam;
+    juce::AudioParameterFloat* modulationRatioParam;
+    juce::AudioParameterFloat* modulationDepthParam;
+
+    juce::AudioParameterBool* enableSignalParam;
+    juce::AudioParameterBool* enableEnvelopeParam;
+    juce::AudioParameterBool* enableModulationParam;
+
+    juce::AudioProcessorValueTreeState& getAPVTS() { return *apvts; }
 
 private:
-    enum class EnvelopeState
-    {
-        Idle,
-        Attack,
-        Decay,
-        Sustain,
-        Release
-    };
-    double getPhaseIncrement (double frequency, double sampleRate) const;
-    void applyEnvelope (double& sample, double& currentEnvelopeValue, EnvelopeState& currentEnvelopeState);
-
-    juce::Tolerance<double> tol = juce::Tolerance<double>().withAbsolute (1e-6).withRelative (1e-6);
-
-    bool isGreaterThanOrEqualDouble (double a, double b) const
-    {
-        return (a > b) || juce::approximatelyEqual (a, b, tol);
-    }
-    bool isLessThanOrEqualDouble (double a, double b) const
-    {
-        return (a < b) || juce::approximatelyEqual (a, b, tol);
-    }
-    bool isEqualDouble (double a, double b) const
-    {
-        return juce::approximatelyEqual (a, b, tol);
-    }
-
     int notePlaying;
 
-    double frequency;
-    double phase[2];
-    double phaseIncrement;
-    double amplitude;
+    static double generateSine (double phase) { return std::sin (phase); }
 
-    EnvelopeState envelopeState[2];
-    double envelopeValue[2];
-    double envelopeAttack;
-    double envelopeDecay;
-    double envelopeSustain;
-    double envelopeRelease;
+    std::unique_ptr<Signal> mainSine;
+
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState> apvts;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

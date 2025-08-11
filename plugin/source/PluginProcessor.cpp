@@ -16,29 +16,15 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
                           )
     , notePlaying (-1)
-    , frequency (0.0)
-    , phase { 0.0, 0.0 }
-    , phaseIncrement (0.0)
-    , amplitude (0.5)
-    , envelopeState { EnvelopeState::Idle, EnvelopeState::Idle }
-    , envelopeValue { 0.0, 0.0 }
-    , envelopeAttack (0.1)
-    , envelopeDecay (0.1)
-    , envelopeSustain (0.7)
-    , envelopeRelease (0.2)
+    , mainSine (nullptr)
 {
+    apvts = std::make_unique<juce::AudioProcessorValueTreeState> (*this, nullptr, "Parameters", createParameterLayout());
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
     dsp::Gain<float> g;
     juce::dsp::Reverb reverb;
-}
-
-double AudioPluginAudioProcessor::getPhaseIncrement (double currentFrequency, double sampleRate) const
-{
-    // Calculate the phase increment based on frequency and sample rate
-    return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate;
 }
 
 //==============================================================================
@@ -112,9 +98,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    // updateFrequency (440.0);                     // Default frequency (A4)
-    // updateAmplitude (0.5); // Default amplitude (50%)
-    // setEnvelopeParameters (0.01, 0.1, 0.7, 0.2); // Default ADSR envelope parameters
+    mainSine = std::make_unique<Signal> (generateSine, sampleRate, "main", *apvts);
+    mainSine->enableModulation (generateSine);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -147,77 +132,6 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 #endif
 }
 
-void AudioPluginAudioProcessor::setEnvelopeParameters (double attack, double decay, double sustain, double release)
-{
-    envelopeAttack = attack;
-    envelopeDecay = decay;
-    envelopeSustain = sustain;
-    envelopeRelease = release;
-}
-
-void AudioPluginAudioProcessor::applyEnvelope (double& sample, double& currentEnvelopeValue, EnvelopeState& currentEnvelopeState)
-{
-    switch (currentEnvelopeState)
-    {
-        case EnvelopeState::Idle:
-            if (notePlaying >= 0)
-            {
-                currentEnvelopeState = EnvelopeState::Attack;
-                DBG ("Idle -> Attack");
-            }
-            currentEnvelopeValue = 0.0;
-            break;
-
-        case EnvelopeState::Attack:
-            if (notePlaying < 0)
-            {
-                currentEnvelopeState = EnvelopeState::Release;
-                DBG ("Attack -> Release");
-            }
-            else if (isGreaterThanOrEqualDouble (currentEnvelopeValue, 1.0))
-            {
-                currentEnvelopeState = EnvelopeState::Decay;
-                DBG ("Attack -> Decay");
-                currentEnvelopeValue = 1.0;
-            }
-            else
-            {
-                currentEnvelopeValue += (1.0 / (envelopeAttack * getSampleRate()));
-            }
-            break;
-
-        case EnvelopeState::Decay:
-            currentEnvelopeValue -= ((currentEnvelopeValue - envelopeSustain) / (envelopeDecay * getSampleRate()));
-            if (isLessThanOrEqualDouble (currentEnvelopeValue, envelopeSustain))
-            {
-                currentEnvelopeValue = envelopeSustain;
-                currentEnvelopeState = EnvelopeState::Sustain;
-                DBG ("Decay -> Sustain");
-            }
-            break;
-
-        case EnvelopeState::Sustain:
-            if (notePlaying < 0)
-            {
-                currentEnvelopeState = EnvelopeState::Release;
-                DBG ("Sustain -> Release");
-            }
-            break;
-
-        case EnvelopeState::Release:
-            currentEnvelopeValue -= (currentEnvelopeValue / (envelopeRelease * getSampleRate()));
-            if (isLessThanOrEqualDouble (currentEnvelopeValue, 0.0))
-            {
-                currentEnvelopeValue = 0.0;
-                currentEnvelopeState = EnvelopeState::Idle;
-                DBG ("Release -> Idle");
-            }
-            break;
-    }
-
-    sample *= currentEnvelopeValue;
-}
-
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     for (const auto messageData : midiMessages)
@@ -227,13 +141,11 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         {
             notePlaying = message.getNoteNumber();
             const auto newFrequency = juce::MidiMessage::getMidiNoteInHertz (notePlaying);
-            updateFrequency (newFrequency);
-            DBG ("Note On: " << notePlaying << ", Frequency: " << newFrequency << ", Amplitude: " << (message.getVelocity() / 127.0));
+            mainSine->updateFrequency (newFrequency);
         }
         else if (message.isNoteOff() && notePlaying == message.getNoteNumber())
         {
             notePlaying = -1;
-            DBG ("Note Off: " << message.getNoteNumber());
         }
     }
 
@@ -246,30 +158,15 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         buffer.clear (i, 0, buffer.getNumSamples());
     }
 
-    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+    for (unsigned long channel = 0; channel < (unsigned long) totalNumOutputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        auto* channelData = buffer.getWritePointer ((int) channel);
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            auto currentSample = std::sin (phase[channel]) * amplitude;
-            applyEnvelope (currentSample, envelopeValue[channel], envelopeState[channel]);
-
-            channelData[sample] = (float) currentSample;
-            phase[channel] += phaseIncrement;
+            channelData[sample] = (float) (mainSine->getSample (channel, notePlaying >= 0));
         }
     }
-}
-
-void AudioPluginAudioProcessor::updateFrequency (double newFrequency)
-{
-    frequency = newFrequency;
-    phaseIncrement = getPhaseIncrement (frequency, getSampleRate());
-}
-
-void AudioPluginAudioProcessor::updateAmplitude (double newAmplitude)
-{
-    amplitude = newAmplitude;
 }
 
 //==============================================================================
@@ -304,4 +201,52 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new AudioPluginAudioProcessor();
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_enabled", 1 }, "Main Sine Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_amplitude", 1 },
+                                                             "Main Sine Amplitude",
+                                                             0.0f,
+                                                             1.0f,
+                                                             0.5f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_envelope_enabled", 1 }, "Envelope Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_attack", 1 },
+                                                             "Envelope Attack",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_decay", 1 },
+                                                             "Envelope Decay",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_sustain", 1 },
+                                                             "Envelope Sustain",
+                                                             0.0f,
+                                                             1.0f,
+                                                             0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_envelope_release", 1 },
+                                                             "Envelope Release",
+                                                             0.01f,
+                                                             1.0f,
+                                                             0.1f));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_mod_enabled", 1 }, "Modulation Enabled", true));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_modulation_ratio", 1 },
+                                                             "Modulation Ratio",
+                                                             0.01f,
+                                                             10.0f,
+                                                             0.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_mod_amplitude", 1 },
+                                                             "Modulation Depth",
+                                                             0.0f,
+                                                             10.0f,
+                                                             0.5f));
+
+    return layout;
 }

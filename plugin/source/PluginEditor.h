@@ -4,13 +4,11 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, public Slider::Listener
+class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
     ~AudioPluginAudioProcessorEditor() override;
-
-    void sliderValueChanged (juce::Slider* slider) override;
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -21,23 +19,41 @@ private:
     // access the processor object that created it.
     AudioPluginAudioProcessor& processorRef;
 
-    // juce::Slider frequencySlider;
-    // juce::Label frequencyLabel;
+    juce::AudioProcessorValueTreeState& apvts;
 
-    juce::Slider amplitudeSlider;
+    juce::ToggleButton enableSignalButton;
+
     juce::Label amplitudeLabel;
+    juce::Slider amplitudeSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> amplitudeAttachment;
 
-    juce::Slider attackSlider;
+    juce::ToggleButton enableEnvelopeButton;
+
     juce::Label attackLabel;
+    juce::Slider attackSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attackAttachment;
 
-    juce::Slider decaySlider;
     juce::Label decayLabel;
+    juce::Slider decaySlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> decayAttachment;
 
-    juce::Slider sustainSlider;
     juce::Label sustainLabel;
+    juce::Slider sustainSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> sustainAttachment;
 
-    juce::Slider releaseSlider;
     juce::Label releaseLabel;
+    juce::Slider releaseSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> releaseAttachment;
+
+    juce::ToggleButton enableModulationButton;
+
+    juce::Label modulationRatioLabel;
+    juce::Slider modulationRatioSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modulationRatioAttachment;
+
+    juce::Label modulationDepthLabel;
+    juce::Slider modulationDepthSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
