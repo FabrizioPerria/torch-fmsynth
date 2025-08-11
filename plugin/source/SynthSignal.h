@@ -4,24 +4,22 @@
 #include "juce_audio_processors/juce_audio_processors.h"
 #include <JuceHeader.h>
 
-class Signal
+class Signal : private juce::AudioProcessorValueTreeState::Listener
 {
 public:
-    Signal (double (*generateFunc) (double), double appSampleRate, juce::String signalName, AudioProcessorValueTreeState& state)
-        : apvts (state)
-        , name (signalName)
-        , phase { 0.0, 0.0 }
-        , phaseIncrement (0.0)
-        , frequency (0.0)
-        , sampleRate (appSampleRate)
-        , generate (generateFunc)
-        , envelope (std::make_unique<Envelope> (name, state))
-        , mod (nullptr)
+    Signal (std::function<double (double)> generateFunc, double appSampleRate, juce::String signalName, AudioProcessorValueTreeState& state)
+        : apvts (state), name (signalName), sampleRate (appSampleRate), envelope (std::make_unique<Envelope> (name, state))
     {
-        enabled = dynamic_cast<juce::AudioParameterBool*> (apvts.getParameter (name + "_enabled"));
-        amplitude = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_amplitude"));
-        modRatio = dynamic_cast<juce::AudioParameterFloat*> (apvts.getParameter (name + "_modulation_ratio"));
+        setGenerateFunction (generateFunc);
+
+        enabled = apvts.getRawParameterValue (name + "_enabled");
+        amplitude = apvts.getRawParameterValue (name + "_amplitude");
+        modRatio = apvts.getRawParameterValue (name + "_modulation_ratio");
+
+        apvts.addParameterListener (name + "_modulation_ratio", this);
     }
+
+    ~Signal() override { apvts.removeParameterListener (name + "_modulation_ratio", this); }
 
     void setSampleRate (double newSampleRate)
     {
@@ -34,14 +32,10 @@ public:
 
     void enableModulation (double (*generateFunc) (double))
     {
-        mod = std::make_unique<Signal> (generateFunc, sampleRate, name + "_mod", apvts);
-        mod->getEnvelope().setEnabled (false);
+        mod = std::make_unique<Signal> (std::move (generateFunc), sampleRate, name + "_mod", apvts);
     }
 
-    void setGenerateFunction (double (*generateFunc) (double))
-    {
-        generate = generateFunc;
-    }
+    void setGenerateFunction (std::function<double (double)> generateFunc) { generate = std::move (generateFunc); }
 
     void updateFrequency (double newFrequency)
     {
@@ -49,29 +43,14 @@ public:
 
         if (mod && mod->isEnabled())
         {
-            auto modFrequency = *modRatio * newFrequency;
+            auto modFrequency = getModulationRatio() * newFrequency;
             mod->updateFrequency (modFrequency);
         }
     }
 
-    void updateAmplitude (double newAmplitude)
+    double getSample (unsigned long channel, bool isNoteOn)
     {
-        *amplitude = (float) newAmplitude;
-    }
-
-    float getAmplitude() const
-    {
-        return *amplitude;
-    }
-
-    double getPhaseIncrement (double currentFrequency)
-    {
-        return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate;
-    }
-
-    double getSample (int channel, bool isNoteOn)
-    {
-        if (! *enabled || generate == nullptr)
+        if (! isEnabled() || generate == nullptr)
         {
             return 0.0;
         }
@@ -91,18 +70,21 @@ public:
         {
             envelopeCoefficient = envelope->getCoefficient (channel, sampleRate, isNoteOn);
         }
-        return sample * *amplitude * envelopeCoefficient;
+        return sample * getAmplitude() * envelopeCoefficient;
     }
 
     void setEnabled (bool newState)
     {
         *enabled = newState;
-        if (! *enabled)
+        if (! isEnabled())
         {
-            phase[0] = 0.0;
-            phase[1] = 0.0;
+            phase.fill (0.0);
         }
     }
+
+    void updateAmplitude (double newAmplitude) { *amplitude = (float) newAmplitude; }
+
+    double getPhaseIncrement (double currentFrequency) { return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate; }
 
     void setModulationRatio (double newRatio)
     {
@@ -110,56 +92,38 @@ public:
         updateFrequency (frequency);
     }
 
-    float getModulationRatio() const
-    {
-        return *modRatio;
-    }
+    bool isEnabled() const { return enabled->load() > 0.5f; }
 
-    juce::AudioParameterBool* getEnabledParameter() const
-    {
-        return enabled;
-    }
+    float getAmplitude() const { return amplitude->load(); }
 
-    juce::AudioParameterFloat* getAmplitudeParameter() const
-    {
-        return amplitude;
-    }
+    float getModulationRatio() const { return modRatio->load(); }
 
-    juce::AudioParameterFloat* getModulationRatioParameter() const
-    {
-        return modRatio;
-    }
+    inline Envelope& getEnvelope() { return *envelope; }
 
-    bool isEnabled() const
-    {
-        return *enabled;
-    }
-
-    Envelope& getEnvelope()
-    {
-        return *envelope;
-    }
-
-    Signal& getModulation()
-    {
-        return *mod;
-    }
+    inline Signal& getModulation() { return *mod; }
 
 private:
     AudioProcessorValueTreeState& apvts;
+
+    void parameterChanged (const juce::String& parameterID, float newValue) override
+    {
+        if (parameterID == name + "_modulation_ratio")
+            updateFrequency (frequency);
+    }
+
     juce::String name;
 
-    juce::AudioParameterBool* enabled;
-    juce::AudioParameterFloat* amplitude;
-    juce::AudioParameterFloat* modRatio;
+    std::atomic<float>* enabled;
+    std::atomic<float>* amplitude;
+    std::atomic<float>* modRatio;
 
-    double phase[2];
-    double phaseIncrement;
-    double frequency;
+    std::array<double, 2> phase { 0.0, 0.0 };
+    double phaseIncrement { 0.0 };
+    double frequency { 440.0 };
     double sampleRate;
 
-    double (*generate) (double phase);
+    std::function<double (double)> generate;
 
     std::unique_ptr<Envelope> envelope;
-    std::unique_ptr<Signal> mod;
+    std::unique_ptr<Signal> mod { nullptr };
 };

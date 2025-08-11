@@ -158,9 +158,9 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         buffer.clear (i, 0, buffer.getNumSamples());
     }
 
-    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+    for (unsigned long channel = 0; channel < (unsigned long) totalNumOutputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        auto* channelData = buffer.getWritePointer ((int) channel);
         auto numSamples = buffer.getNumSamples();
         for (int sample = 0; sample < numSamples; ++sample)
         {
@@ -240,12 +240,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_modulation_ratio", 1 },
                                                              "Modulation Ratio",
                                                              0.01f,
-                                                             1.0f,
+                                                             10.0f,
                                                              0.5f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_mod_amplitude", 1 },
                                                              "Modulation Depth",
                                                              0.0f,
-                                                             1.0f,
+                                                             10.0f,
                                                              0.5f));
 
     return layout;

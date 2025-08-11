@@ -45,10 +45,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    Signal& getMainSine()
-    {
-        return *mainSine;
-    }
+    Signal& getMainSine() { return *mainSine; }
 
     juce::AudioParameterFloat* amplitudeParam;
     juce::AudioParameterFloat* attackParam;
@@ -62,13 +59,12 @@ public:
     juce::AudioParameterBool* enableEnvelopeParam;
     juce::AudioParameterBool* enableModulationParam;
 
+    juce::AudioProcessorValueTreeState& getAPVTS() { return *apvts; }
+
 private:
     int notePlaying;
 
-    static double generateSine (double phase)
-    {
-        return std::sin (phase);
-    }
+    static double generateSine (double phase) { return std::sin (phase); }
 
     std::unique_ptr<Signal> mainSine;
 

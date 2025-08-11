@@ -7,100 +7,126 @@
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p)
-    , processorRef (p)
-    , mainSine (p.getMainSine())
-    , envelope (mainSine.getEnvelope())
-    , modulation (mainSine.getModulation())
+    : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS())
 {
     juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (600, 500);
 
+    // ============================================================================================
+    // ENABLE SIGNAL BUTTON
+
+    auto& enableSignalParam = *apvts.getRawParameterValue ("main_enabled");
     addAndMakeVisible (enableSignalButton);
     enableSignalButton.setButtonText ("Enable Signal");
-    enableSignalButton.setToggleState (mainSine.isEnabled(), juce::dontSendNotification);
-    enableSignalButton.onClick = [this]() { mainSine.setEnabled (enableSignalButton.getToggleState()); };
-
-    addAndMakeVisible (enableEnvelopeButton);
-    enableEnvelopeButton.setButtonText ("Enable Envelope");
-    enableEnvelopeButton.setToggleState (envelope.isEnabled(), juce::dontSendNotification);
-    enableEnvelopeButton.onClick = [this]() { envelope.setEnabled (enableEnvelopeButton.getToggleState()); };
-
-    addAndMakeVisible (enableModulationButton);
-    enableModulationButton.setButtonText ("Enable Modulation");
-    enableModulationButton.setToggleState (modulation.isEnabled(), juce::dontSendNotification);
-    enableModulationButton.onClick = [this]() { modulation.setEnabled (enableModulationButton.getToggleState()); };
+    enableSignalButton.setToggleState (enableSignalParam.load() > 0.5f, juce::dontSendNotification);
+    enableSignalButton.onClick = [this, &enableSignalParam]() { enableSignalParam = enableSignalButton.getToggleState(); };
+    // ============================================================================================
+    // AMPLITUDE SLIDER
 
     addAndMakeVisible (amplitudeLabel);
     amplitudeLabel.setText ("Amplitude", juce::dontSendNotification);
+    auto& amplitudeParam = *apvts.getRawParameterValue ("main_amplitude");
+    auto amplitudeParamRange = apvts.getParameterRange ("main_amplitude");
     addAndMakeVisible (amplitudeSlider);
-    amplitudeSlider.setRange (mainSine.getAmplitudeParameter()->getNormalisableRange().start,
-                              mainSine.getAmplitudeParameter()->getNormalisableRange().end,
-                              0.01);
-    amplitudeSlider.setValue (mainSine.getAmplitude());
-    amplitudeSlider.addListener (this);
-
-    addAndMakeVisible (attackLabel);
-    attackLabel.setText ("Attack", juce::dontSendNotification);
-    addAndMakeVisible (attackSlider);
-    attackSlider.setRange (envelope.getEnvelopeAttackParameter()->getNormalisableRange().start,
-                           envelope.getEnvelopeAttackParameter()->getNormalisableRange().end,
-                           0.01);
-    attackSlider.setValue (envelope.getEnvelopeAttack());
-    attackSlider.addListener (this);
-
-    addAndMakeVisible (decayLabel);
-    decayLabel.setText ("Decay", juce::dontSendNotification);
-    addAndMakeVisible (decaySlider);
-    decaySlider.setRange (envelope.getEnvelopeDecayParameter()->getNormalisableRange().start,
-                          envelope.getEnvelopeDecayParameter()->getNormalisableRange().end,
-                          0.01);
-    decaySlider.setValue (envelope.getEnvelopeDecay());
-    decaySlider.addListener (this);
-
-    addAndMakeVisible (sustainLabel);
-    sustainLabel.setText ("Sustain", juce::dontSendNotification);
-    addAndMakeVisible (sustainSlider);
-    sustainSlider.setRange (envelope.getEnvelopeSustainParameter()->getNormalisableRange().start,
-                            envelope.getEnvelopeSustainParameter()->getNormalisableRange().end,
-                            0.01);
-    sustainSlider.setValue (envelope.getEnvelopeSustain());
-    sustainSlider.addListener (this);
-
-    addAndMakeVisible (releaseLabel);
-    releaseLabel.setText ("Release", juce::dontSendNotification);
-    addAndMakeVisible (releaseSlider);
-    releaseSlider.setRange (envelope.getEnvelopeReleaseParameter()->getNormalisableRange().start,
-                            envelope.getEnvelopeReleaseParameter()->getNormalisableRange().end,
-                            0.01);
-    releaseSlider.setValue (envelope.getEnvelopeRelease());
-    releaseSlider.addListener (this);
+    amplitudeSlider.setRange (amplitudeParamRange.start, amplitudeParamRange.end, 0.01);
+    amplitudeSlider.setValue (amplitudeParam.load());
+    amplitudeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_amplitude", amplitudeSlider);
+    // ============================================================================================
+    // MODULATION RATIO SLIDER
 
     addAndMakeVisible (modulationRatioLabel);
     modulationRatioLabel.setText ("Modulation Ratio", juce::dontSendNotification);
-
+    auto& modulationRatioParam = *apvts.getRawParameterValue ("main_modulation_ratio");
+    auto modulationRatioParamRange = apvts.getParameterRange ("main_modulation_ratio");
     addAndMakeVisible (modulationRatioSlider);
-    modulationRatioSlider.setRange (mainSine.getModulationRatioParameter()->getNormalisableRange().start,
-                                    mainSine.getModulationRatioParameter()->getNormalisableRange().end,
-                                    0.01);
-    modulationRatioSlider.setValue (mainSine.getModulationRatio());
-    modulationRatioSlider.addListener (this);
+    modulationRatioSlider.setRange (modulationRatioParamRange.start, modulationRatioParamRange.end, 0.01);
+    modulationRatioSlider.setValue (modulationRatioParam.load());
+    modulationRatioAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
+                                                                                                        "main_modulation_ratio",
+                                                                                                        modulationRatioSlider);
+    // ============================================================================================
+    // ENVELOPE BUTTON
+
+    auto& envelopeEnabledParam = *apvts.getRawParameterValue ("main_envelope_enabled");
+    addAndMakeVisible (enableEnvelopeButton);
+    enableEnvelopeButton.setButtonText ("Enable Envelope");
+    enableEnvelopeButton.setToggleState (envelopeEnabledParam.load() > 0.5f, juce::dontSendNotification);
+    enableEnvelopeButton.onClick = [this, &envelopeEnabledParam]() { envelopeEnabledParam = enableEnvelopeButton.getToggleState(); };
+    // ============================================================================================
+    // ENVELOPE ATTACK SLIDER
+
+    addAndMakeVisible (attackLabel);
+    attackLabel.setText ("Attack", juce::dontSendNotification);
+    auto& attackParam = *apvts.getRawParameterValue ("main_envelope_attack");
+    auto attackParamRange = apvts.getParameterRange ("main_envelope_attack");
+    addAndMakeVisible (attackSlider);
+    attackSlider.setRange (attackParamRange.start, attackParamRange.end, 0.01);
+    attackSlider.setValue (attackParam.load());
+    attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_envelope_attack", attackSlider);
+    // ============================================================================================
+    // ENVELOPE DECAY SLIDER
+
+    addAndMakeVisible (decayLabel);
+    decayLabel.setText ("Decay", juce::dontSendNotification);
+    auto& decayParam = *apvts.getRawParameterValue ("main_envelope_decay");
+    auto decayParamRange = apvts.getParameterRange ("main_envelope_decay");
+    addAndMakeVisible (decaySlider);
+    decaySlider.setRange (decayParamRange.start, decayParamRange.end, 0.01);
+    decaySlider.setValue (decayParam.load());
+    decayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_envelope_decay", decaySlider);
+    // ============================================================================================
+    // ENVELOPE SUSTAIN SLIDER
+
+    addAndMakeVisible (sustainLabel);
+    sustainLabel.setText ("Sustain", juce::dontSendNotification);
+    auto& sustainParam = *apvts.getRawParameterValue ("main_envelope_sustain");
+    auto sustainParamRange = apvts.getParameterRange ("main_envelope_sustain");
+    addAndMakeVisible (sustainSlider);
+    sustainSlider.setRange (sustainParamRange.start, sustainParamRange.end, 0.01);
+    sustainSlider.setValue (sustainParam.load());
+    sustainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
+                                                                                                "main_envelope_sustain",
+                                                                                                sustainSlider);
+    // ============================================================================================
+    // ENVELOPE RELEASE SLIDER
+
+    addAndMakeVisible (releaseLabel);
+    releaseLabel.setText ("Release", juce::dontSendNotification);
+    auto& releaseParam = *apvts.getRawParameterValue ("main_envelope_release");
+    auto releaseParamRange = apvts.getParameterRange ("main_envelope_release");
+    addAndMakeVisible (releaseSlider);
+    releaseSlider.setRange (releaseParamRange.start, releaseParamRange.end, 0.01);
+    releaseSlider.setValue (releaseParam.load());
+    releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
+                                                                                                "main_envelope_release",
+                                                                                                releaseSlider);
+    // ============================================================================================
+    // MODULATION BUTTON
+
+    auto& modulationEnabledParam = *apvts.getRawParameterValue ("main_mod_enabled");
+    addAndMakeVisible (enableModulationButton);
+    enableModulationButton.setButtonText ("Enable Modulation");
+    enableModulationButton.setToggleState (modulationEnabledParam.load() > 0.5f, juce::dontSendNotification);
+    enableModulationButton.onClick = [this, &modulationEnabledParam]()
+    { modulationEnabledParam = enableModulationButton.getToggleState(); };
+    // ============================================================================================
+    // MODULATION DEPTH SLIDER
 
     addAndMakeVisible (modulationDepthLabel);
     modulationDepthLabel.setText ("Modulation Depth", juce::dontSendNotification);
+    auto& modulationDepthParam = *apvts.getRawParameterValue ("main_mod_amplitude");
+    auto modulationDepthParamRange = apvts.getParameterRange ("main_mod_amplitude");
     addAndMakeVisible (modulationDepthSlider);
-    modulationDepthSlider.setRange (modulation.getAmplitudeParameter()->getNormalisableRange().start,
-                                    modulation.getAmplitudeParameter()->getNormalisableRange().end,
-                                    0.01);
-    modulationDepthSlider.setValue (modulation.getAmplitude());
-    modulationDepthSlider.addListener (this);
+    modulationDepthSlider.setRange (modulationDepthParamRange.start, modulationDepthParamRange.end, 0.01);
+    modulationDepthSlider.setValue (modulationDepthParam.load());
+    modulationDepthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
+                                                                                                        "main_mod_amplitude",
+                                                                                                        modulationDepthSlider);
 }
 
-AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
-{
-}
+AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
 
 //==============================================================================
 void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
@@ -164,27 +190,4 @@ void AudioPluginAudioProcessorEditor::resized()
 
     modulationDepthLabel.setBounds (labelX, labelY, labelWidth, height);
     modulationDepthSlider.setBounds (sliderX, labelY, sliderWidth, height);
-}
-
-void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
-{
-    if (slider == &amplitudeSlider)
-    {
-        mainSine.updateAmplitude (amplitudeSlider.getValue());
-    }
-    else if (slider == &attackSlider || slider == &decaySlider || slider == &sustainSlider || slider == &releaseSlider)
-    {
-        envelope.setEnvelopeParameters (attackSlider.getValue(),
-                                        decaySlider.getValue(),
-                                        sustainSlider.getValue(),
-                                        releaseSlider.getValue());
-    }
-    else if (slider == &modulationRatioSlider)
-    {
-        mainSine.setModulationRatio (modulationRatioSlider.getValue());
-    }
-    else if (slider == &modulationDepthSlider)
-    {
-        modulation.updateAmplitude (modulationDepthSlider.getValue());
-    }
 }
