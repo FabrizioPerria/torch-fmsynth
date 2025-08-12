@@ -59,7 +59,7 @@ public:
     juce::AudioParameterBool* enableEnvelopeParam;
     juce::AudioParameterBool* enableModulationParam;
 
-    juce::AudioProcessorValueTreeState& getAPVTS() { return *apvts; }
+    juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
 
 private:
     int notePlaying;
@@ -70,7 +70,7 @@ private:
 
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    std::unique_ptr<juce::AudioProcessorValueTreeState> apvts;
+    juce::AudioProcessorValueTreeState apvts;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

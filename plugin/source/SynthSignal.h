@@ -2,6 +2,7 @@
 
 #include "Envelope.h"
 #include "juce_audio_processors/juce_audio_processors.h"
+#include "juce_core/juce_core.h"
 #include <JuceHeader.h>
 
 class Signal : private juce::AudioProcessorValueTreeState::Listener
@@ -30,7 +31,7 @@ public:
         }
     }
 
-    void enableModulation (double (*generateFunc) (double))
+    void enableModulation (std::function<double (double)> generateFunc)
     {
         mod = std::make_unique<Signal> (std::move (generateFunc), sampleRate, name + "_mod", apvts);
     }
@@ -75,20 +76,33 @@ public:
 
     void setEnabled (bool newState)
     {
-        *enabled = newState;
+        auto* param = apvts.getParameter (name + "_enabled");
+        param->beginChangeGesture();
+        param->setValueNotifyingHost (newState ? 1.0f : 0.0f);
+        param->endChangeGesture();
         if (! isEnabled())
         {
             phase.fill (0.0);
         }
     }
 
-    void updateAmplitude (double newAmplitude) { *amplitude = (float) newAmplitude; }
+    void updateAmplitude (double newAmplitude)
+    {
+        auto* param = apvts.getParameter (name + "_amplitude");
+        param->beginChangeGesture();
+        param->setValueNotifyingHost ((float) newAmplitude);
+        param->endChangeGesture();
+    }
 
-    double getPhaseIncrement (double currentFrequency) { return (2.0 * juce::MathConstants<double>::pi * currentFrequency) / sampleRate; }
+    static constexpr double twoPi = 2.0 * juce::MathConstants<double>::pi;
+    double getPhaseIncrement (double currentFrequency) { return (twoPi * currentFrequency) / sampleRate; }
 
     void setModulationRatio (double newRatio)
     {
-        *modRatio = (float) newRatio;
+        auto* param = apvts.getParameter (name + "_modulation_ratio");
+        param->beginChangeGesture();
+        param->setValueNotifyingHost ((float) newRatio);
+        param->endChangeGesture();
         updateFrequency (frequency);
     }
 
@@ -107,8 +121,18 @@ private:
 
     void parameterChanged (const juce::String& parameterID, float newValue) override
     {
+        // This method is called when a parameter changes.
+        // We can ignore the newValue here because we already have the current value stored in the member variables.
+        // However, we can use it to trigger any necessary updates or recalculations
+        // based on the parameter change.
+        juce::ignoreUnused (newValue);
+
+        // We only react to changes in the modulation ratio parameter because we need to recalculate the frequency
+        // when it changes. Other parameters are handled through their respective setters.
         if (parameterID == name + "_modulation_ratio")
+        {
             updateFrequency (frequency);
+        }
     }
 
     juce::String name;

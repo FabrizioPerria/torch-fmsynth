@@ -9,7 +9,6 @@
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS())
 {
-    juce::ignoreUnused (processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (600, 500);
@@ -21,7 +20,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (enableSignalButton);
     enableSignalButton.setButtonText ("Enable Signal");
     enableSignalButton.setToggleState (enableSignalParam.load() > 0.5f, juce::dontSendNotification);
-    enableSignalButton.onClick = [this, &enableSignalParam]() { enableSignalParam = enableSignalButton.getToggleState(); };
+    enableSignalAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                     "main_enabled",
+                                                                                                     enableSignalButton);
     // ============================================================================================
     // AMPLITUDE SLIDER
 
@@ -53,7 +54,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (enableEnvelopeButton);
     enableEnvelopeButton.setButtonText ("Enable Envelope");
     enableEnvelopeButton.setToggleState (envelopeEnabledParam.load() > 0.5f, juce::dontSendNotification);
-    enableEnvelopeButton.onClick = [this, &envelopeEnabledParam]() { envelopeEnabledParam = enableEnvelopeButton.getToggleState(); };
+    enableEnvelopeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                       "main_envelope_enabled",
+                                                                                                       enableEnvelopeButton);
     // ============================================================================================
     // ENVELOPE ATTACK SLIDER
 
@@ -109,8 +112,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (enableModulationButton);
     enableModulationButton.setButtonText ("Enable Modulation");
     enableModulationButton.setToggleState (modulationEnabledParam.load() > 0.5f, juce::dontSendNotification);
-    enableModulationButton.onClick = [this, &modulationEnabledParam]()
-    { modulationEnabledParam = enableModulationButton.getToggleState(); };
+    enableModulationAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                         "main_mod_enabled",
+                                                                                                         enableModulationButton);
     // ============================================================================================
     // MODULATION DEPTH SLIDER
 

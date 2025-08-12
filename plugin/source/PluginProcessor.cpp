@@ -17,8 +17,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                           )
     , notePlaying (-1)
     , mainSine (nullptr)
+    , apvts (*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 {
-    apvts = std::make_unique<juce::AudioProcessorValueTreeState> (*this, nullptr, "Parameters", createParameterLayout());
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -98,7 +98,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
-    mainSine = std::make_unique<Signal> (generateSine, sampleRate, "main", *apvts);
+    mainSine = std::make_unique<Signal> (generateSine, sampleRate, "main", apvts);
     mainSine->enableModulation (generateSine);
 }
 

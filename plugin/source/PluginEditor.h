@@ -22,12 +22,14 @@ private:
     juce::AudioProcessorValueTreeState& apvts;
 
     juce::ToggleButton enableSignalButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enableSignalAttachment;
 
     juce::Label amplitudeLabel;
     juce::Slider amplitudeSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> amplitudeAttachment;
 
     juce::ToggleButton enableEnvelopeButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enableEnvelopeAttachment;
 
     juce::Label attackLabel;
     juce::Slider attackSlider;
@@ -46,6 +48,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> releaseAttachment;
 
     juce::ToggleButton enableModulationButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enableModulationAttachment;
 
     juce::Label modulationRatioLabel;
     juce::Slider modulationRatioSlider;
