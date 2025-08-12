@@ -6,7 +6,7 @@
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS())
+    : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS()), modulationSuperKnobSlider (p.getAPVTS())
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -127,6 +127,14 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     modulationDepthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
                                                                                                         "main_mod_amplitude",
                                                                                                         modulationDepthSlider);
+
+    // ============================================================================================
+    // MODULATION SUPERKNOB
+    addAndMakeVisible (modulationSuperKnobLabel);
+    modulationSuperKnobLabel.setText ("Modulation Super Knob", juce::dontSendNotification);
+    addAndMakeVisible (modulationSuperKnobSlider);
+    modulationSuperKnobSlider.setRange (0.001, 10.0, 0.01);
+    modulationSuperKnobSlider.setValue (5);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
@@ -187,4 +195,8 @@ void AudioPluginAudioProcessorEditor::resized()
 
     modulationDepthLabel.setBounds (labelX, labelY, labelWidth, height);
     modulationDepthSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 40;
+
+    modulationSuperKnobLabel.setBounds (labelX, labelY, labelWidth, height);
+    modulationSuperKnobSlider.setBounds (sliderX, labelY, sliderWidth, height);
 }

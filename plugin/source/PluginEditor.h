@@ -1,5 +1,6 @@
 #pragma once
 #include "PluginProcessor.h"
+#include "SuperSlider.h"
 #include "juce_gui_basics/juce_gui_basics.h"
 #include <JuceHeader.h>
 
@@ -57,6 +58,9 @@ private:
     juce::Label modulationDepthLabel;
     juce::Slider modulationDepthSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachment;
+
+    juce::Label modulationSuperKnobLabel;
+    SuperSlider modulationSuperKnobSlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
