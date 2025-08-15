@@ -91,12 +91,14 @@ torch::Tensor vec2tensor (const std::vector<float>& vec)
 
 int main()
 {
-    int count = 10;
+    int count = 1000;
     auto line = getnoisyLine (count);
 
     std::cout << "Creating a simple model..." << std::endl;
     int in { 1 }, out { 1 };
     auto net = makeModel (in, out);
+
+    auto optimizer = torch::optim::SGD (net->parameters(), /*lr=*/0.01);
 
     std::vector<float> xs = std::vector<float> (count);
     std::transform (line.begin(), line.end(), xs.begin(), [] (const auto& x) { return x.first; });
@@ -106,13 +108,22 @@ int main()
     std::transform (line.begin(), line.end(), ys.begin(), [] (const auto& y) { return y.second; });
     auto target = vec2tensor (ys);
 
-    auto output = net->forward (input);
+    float lossValue = 1000.0f;
+    int cnt = 0;
+    while (lossValue > 0.5f)
+    {
+        cnt++;
+        auto output = net->forward (input);
 
-    auto errors = output - target;
+        torch::Tensor loss = torch::mse_loss (output, target);
+        lossValue = loss.item<float>();
 
-    torch::Tensor loss = torch::mse_loss (output, target);
-    float lossValue = loss.item<float>();
-    std::cout << "Loss: " << lossValue << std::endl;
+        optimizer.zero_grad();
+        loss.backward();
+        optimizer.step();
+    }
+
+    std::cout << "Training completed in " << cnt << " iterations with final loss: " << lossValue << std::endl;
 
     return 0;
 }
