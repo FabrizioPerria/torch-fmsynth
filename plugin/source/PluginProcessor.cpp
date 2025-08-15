@@ -23,8 +23,12 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
-    dsp::Gain<float> g;
-    juce::dsp::Reverb reverb;
+    // Ensure that the mainSine is properly cleaned up
+    if (mainSine)
+    {
+        mainSine->setEnabled (false);
+        mainSine.reset();
+    }
 }
 
 //==============================================================================

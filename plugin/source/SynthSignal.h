@@ -117,8 +117,6 @@ public:
     inline Signal& getModulation() { return *mod; }
 
 private:
-    AudioProcessorValueTreeState& apvts;
-
     void parameterChanged (const juce::String& parameterID, float newValue) override
     {
         // This method is called when a parameter changes.
@@ -150,4 +148,6 @@ private:
 
     std::unique_ptr<Envelope> envelope;
     std::unique_ptr<Signal> mod { nullptr };
+
+    AudioProcessorValueTreeState& apvts;
 };
