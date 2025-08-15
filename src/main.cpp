@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <torch/nn/modules/linear.h>
 #include <torch/torch.h>
 
 std::vector<std::pair<float, float>> getLine (float bias, float weight, float startX, float endX, float count)
@@ -68,15 +69,38 @@ void showNoisyLine()
     }
 }
 
+torch::nn::Linear makeModel()
+{
+    // Create the model and ensure it's on CPU
+    auto net = torch::nn::Linear (2, 3);
+    net->to (torch::kCPU);
+
+    for (const auto& param : net->parameters())
+    {
+        std::cout << "Parameter: " << param << std::endl;
+    }
+    return net;
+}
+
 int main()
 {
-    testLine();
-    showNoisyLine();
-    // Create a tensor filled with zeros
-    torch::Tensor tensor = torch::rand ({ 2, 3 });
+    // std::cout << "Testing line generation and noise addition..." << std::endl;
+    // testLine();
+    // showNoisyLine();
 
-    // Print the tensor
-    std::cout << "Tensor: " << tensor << std::endl;
+    std::cout << "Creating a simple model..." << std::endl;
+    auto net = makeModel();
+    auto input = torch::empty ({ 1, 2 }, torch::kFloat);
+    input[0][0] = 1.0f; // Example input
+    input[0][1] = 2.0f; // Example input
+    auto output = net->forward (input);
+    std::cout << "Model output: " << output << std::endl;
+
+    // // Create a tensor filled with zeros
+    // torch::Tensor tensor = torch::rand ({ 2, 3 });
+    //
+    // // Print the tensor
+    // std::cout << "Tensor: " << tensor << std::endl;
 
     return 0;
 }
