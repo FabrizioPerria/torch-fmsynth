@@ -1,3 +1,4 @@
+#include <ATen/ops/mse_loss.h>
 #include <iostream>
 #include <random>
 #include <torch/nn/modules/linear.h>
@@ -54,25 +55,21 @@ void addNoiseToLine (std::vector<std::pair<float, float>>& line, float lowThresh
     std::for_each (line.begin(), line.end(), [&rand] (auto& point) { point.second += rand(); });
 }
 
-void showNoisyLine()
+std::vector<std::pair<float, float>> getnoisyLine (float points)
 {
     float bias = 1.0f;
     float weight = 2.0f;
     float startX = 0.0f;
     float endX = 10.0f;
-    float count = 10.0f;
-    auto line = getLine (bias, weight, startX, endX, count);
+    auto line = getLine (bias, weight, startX, endX, points);
     addNoiseToLine (line, -0.5f, 0.5f);
-    for (const auto& point : line)
-    {
-        std::cout << "x: " << point.first << ", y: " << point.second << std::endl;
-    }
+
+    return line;
 }
 
-torch::nn::Linear makeModel()
+torch::nn::Linear makeModel (int in, int out)
 {
-    // Create the model and ensure it's on CPU
-    auto net = torch::nn::Linear (2, 3);
+    auto net = torch::nn::Linear (in, out);
     net->to (torch::kCPU);
 
     for (const auto& param : net->parameters())
@@ -82,25 +79,40 @@ torch::nn::Linear makeModel()
     return net;
 }
 
+torch::Tensor vec2tensor (const std::vector<float>& vec)
+{
+    torch::Tensor tensor = torch::empty ({ static_cast<int64_t> (vec.size()), 1 }, torch::kFloat);
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        tensor[i][0] = vec[i];
+    }
+    return tensor;
+}
+
 int main()
 {
-    // std::cout << "Testing line generation and noise addition..." << std::endl;
-    // testLine();
-    // showNoisyLine();
+    int count = 10;
+    auto line = getnoisyLine (count);
 
     std::cout << "Creating a simple model..." << std::endl;
-    auto net = makeModel();
-    auto input = torch::empty ({ 1, 2 }, torch::kFloat);
-    input[0][0] = 1.0f; // Example input
-    input[0][1] = 2.0f; // Example input
-    auto output = net->forward (input);
-    std::cout << "Model output: " << output << std::endl;
+    int in { 1 }, out { 1 };
+    auto net = makeModel (in, out);
 
-    // // Create a tensor filled with zeros
-    // torch::Tensor tensor = torch::rand ({ 2, 3 });
-    //
-    // // Print the tensor
-    // std::cout << "Tensor: " << tensor << std::endl;
+    std::vector<float> xs = std::vector<float> (count);
+    std::transform (line.begin(), line.end(), xs.begin(), [] (const auto& x) { return x.first; });
+    auto input = vec2tensor (xs);
+
+    std::vector<float> ys = std::vector<float> (count);
+    std::transform (line.begin(), line.end(), ys.begin(), [] (const auto& y) { return y.second; });
+    auto target = vec2tensor (ys);
+
+    auto output = net->forward (input);
+
+    auto errors = output - target;
+
+    torch::Tensor loss = torch::mse_loss (output, target);
+    float lossValue = loss.item<float>();
+    std::cout << "Loss: " << lossValue << std::endl;
 
     return 0;
 }
