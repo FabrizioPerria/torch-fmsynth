@@ -141,6 +141,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     // MODULATION SUPERKNOB
     addAndMakeVisible (modulationSuperKnobLabel);
     modulationSuperKnobLabel.setText ("Modulation Super Knob", juce::dontSendNotification);
+    modulationSuperKnobSlider.addParameterToControl ("main_modulation_ratio");
+    modulationSuperKnobSlider.addParameterToControl ("main_mod_amplitude");
     addAndMakeVisible (modulationSuperKnobSlider);
     modulationSuperKnobSlider.setRange (0.001, 1.0, 0.01);
     modulationSuperKnobSlider.setValue (0.5);

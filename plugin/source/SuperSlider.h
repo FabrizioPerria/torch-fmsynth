@@ -2,15 +2,14 @@
 
 #include "juce_audio_processors/juce_audio_processors.h"
 #include <JuceHeader.h>
+#include <torch/nn/modules/linear.h>
 
 class SuperSlider : public juce::Slider
 {
 public:
     SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
     {
-        auto parametersToControl = std::vector<std::string> { "main_modulation_ratio", "main_mod_amplitude" };
-
-        onValueChange = [this, apvts, sliders, parametersToControl]()
+        onValueChange = [this, apvts, sliders]()
         {
             auto range = this->getRange();
             auto knobMin = range.getStart();
@@ -18,28 +17,42 @@ public:
 
             double torchKnobValue = this->getValue();
             double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
+            torch::Tensor in = torch::empty ({ 1, 1 }, torch::kFloat);
+            in[0][0] = (float) knobNormalized;
+            torch::Tensor out = net (in);
 
-            for (auto& s : parametersToControl)
+            for (unsigned long i = 0; i < parametersToControl.size(); ++i)
             {
+                auto s = parametersToControl[i];
+
                 auto parameter = apvts->getParameter (s);
-                auto slider = sliders->at (s);
-                double high = slider->getMaxValue();
-                double low = slider->getMinValue();
-                std::cout << "Setting parameter: " << s << " with normalized value: " << knobNormalized << ", high: " << high
-                          << ", low: " << low << std::endl;
-
-                double weight = high - low;
-                double bias = low;
-
-                double value = weight * knobNormalized + bias;
-
                 parameter->beginChangeGesture();
-                parameter->setValueNotifyingHost (((float) parameter->convertTo0to1 ((float) value)));
+                std::cout << "Setting parameter: " << s << " to value: " << out[0][i].item<float>() << std::endl;
+                parameter->setValueNotifyingHost ((float) out[0][i].item<float>());
                 parameter->endChangeGesture();
+
+                // auto parameter = apvts->getParameter (s);
+                // auto slider = sliders->at (s);
+                // double high = slider->getMaxValue();
+                // double low = slider->getMinValue();
+                //
+                // double weight = high - low;
+                // double bias = low;
+                //
+                // double value = weight * knobNormalized + bias;
+                //
+                // parameter->beginChangeGesture();
+                // parameter->setValueNotifyingHost (((float) parameter->convertTo0to1 ((float) value)));
+                // parameter->endChangeGesture();
             }
         };
     }
 
+    void addParameterToControl (const std::string& parameterName) { parametersToControl.push_back (parameterName); }
+
 private:
+    std::vector<std::string> parametersToControl;
+    torch::nn::Linear net { 1, 2 };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };
