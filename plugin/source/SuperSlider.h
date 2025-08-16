@@ -6,36 +6,40 @@
 class SuperSlider : public juce::Slider
 {
 public:
-    SuperSlider (juce::AudioProcessorValueTreeState& apvts) : juce::Slider()
+    SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
     {
-        modulationRatio = apvts.getParameter ("main_modulation_ratio");
-        auto modulationRatioRange = apvts.getParameterRange ("main_modulation_ratio");
-        modulationDepth = apvts.getParameter ("main_mod_amplitude");
-        auto modulationDepthRange = apvts.getParameterRange ("main_mod_amplitude");
+        auto parametersToControl = std::vector<std::string> { "main_modulation_ratio", "main_mod_amplitude" };
 
-        onValueChange = [this, modulationRatioRange, modulationDepthRange]()
+        onValueChange = [this, apvts, sliders, parametersToControl]()
         {
-            auto value = (float) getValue();
+            auto range = this->getRange();
+            auto knobMin = range.getStart();
+            auto knobMax = range.getEnd();
 
-            // Small slider values decrease the ratio and increase the depth
-            if (modulationRatio != nullptr)
+            double torchKnobValue = this->getValue();
+            double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
+
+            for (auto& s : parametersToControl)
             {
-                auto newRatio = 1.0 - (value / 10.0);
-                modulationRatio->beginChangeGesture();
-                modulationRatio->setValueNotifyingHost (newRatio);
-                modulationRatio->endChangeGesture();
-            }
-            if (modulationDepth != nullptr)
-            {
-                auto newDepth = value / 10.0;
-                modulationDepth->beginChangeGesture();
-                modulationDepth->setValueNotifyingHost (newDepth);
-                modulationDepth->endChangeGesture();
+                auto parameter = apvts->getParameter (s);
+                auto slider = sliders->at (s);
+                double high = slider->getMaxValue();
+                double low = slider->getMinValue();
+                std::cout << "Setting parameter: " << s << " with normalized value: " << knobNormalized << ", high: " << high
+                          << ", low: " << low << std::endl;
+
+                double weight = high - low;
+                double bias = low;
+
+                double value = weight * knobNormalized + bias;
+
+                parameter->beginChangeGesture();
+                parameter->setValueNotifyingHost (((float) parameter->convertTo0to1 ((float) value)));
+                parameter->endChangeGesture();
             }
         };
     }
 
 private:
-    juce::RangedAudioParameter* modulationRatio = nullptr;
-    juce::RangedAudioParameter* modulationDepth = nullptr;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };

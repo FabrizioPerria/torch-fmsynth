@@ -5,7 +5,7 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor
+class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, public juce::Slider::Listener
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -14,6 +14,7 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    void sliderValueChanged (juce::Slider* slider) override;
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -58,6 +59,8 @@ private:
     juce::Label modulationDepthLabel;
     juce::Slider modulationDepthSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachment;
+
+    std::map<juce::String, juce::Slider*> sliders;
 
     juce::Label modulationSuperKnobLabel;
     SuperSlider modulationSuperKnobSlider;
