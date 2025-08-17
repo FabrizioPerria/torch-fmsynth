@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NeuralNetwork.h"
 #include "juce_audio_processors/juce_audio_processors.h"
 #include <JuceHeader.h>
 #include <torch/nn/modules/linear.h>
@@ -17,9 +18,11 @@ public:
 
             double torchKnobValue = this->getValue();
             double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
-            torch::Tensor in = torch::empty ({ 1, 1 }, torch::kFloat);
-            in[0][0] = (float) knobNormalized;
-            torch::Tensor out = net (in);
+            // torch::Tensor in = torch::empty ({ 1, 1 }, torch::kFloat);
+            // in[0][0] = (float) knobNormalized;
+            // torch::Tensor out = net (in);
+            std::vector<float> input = { (float) knobNormalized };
+            auto out = net.forward (input);
 
             for (unsigned long i = 0; i < parametersToControl.size(); ++i)
             {
@@ -27,8 +30,7 @@ public:
 
                 auto parameter = apvts->getParameter (s);
                 parameter->beginChangeGesture();
-                std::cout << "Setting parameter: " << s << " to value: " << out[0][i].item<float>() << std::endl;
-                parameter->setValueNotifyingHost ((float) out[0][i].item<float>());
+                parameter->setValueNotifyingHost (out[i]);
                 parameter->endChangeGesture();
 
                 // auto parameter = apvts->getParameter (s);
@@ -52,7 +54,7 @@ public:
 
 private:
     std::vector<std::string> parametersToControl;
-    torch::nn::Linear net { 1, 2 };
+    NeuralNetwork net { 1, 2 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };

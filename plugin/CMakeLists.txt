@@ -43,8 +43,9 @@ set(juce_binary_data_folder
 set_target_properties(${PROJECT_NAME} PROPERTIES JUCE_BINARY_DATA_FOLDER
                                                  ${juce_binary_data_folder})
 
-target_sources(${PROJECT_NAME} PRIVATE source/PluginEditor.cpp
-                                       source/PluginProcessor.cpp)
+target_sources(
+  ${PROJECT_NAME} PRIVATE source/PluginEditor.cpp source/PluginProcessor.cpp
+                          source/NeuralNetwork.cpp)
 
 target_include_directories(
   ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source ${LIB_DIR}/tracer
