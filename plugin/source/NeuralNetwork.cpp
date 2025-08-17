@@ -9,7 +9,15 @@ NeuralNetwork::NeuralNetwork (int inputSize, int outputSize) : numInputs (inputS
 
 std::vector<float> NeuralNetwork::forward (const std::vector<float>& input)
 {
-    std::vector<float> output = { 0.4f, 0.6f };
+    static thread_local std::vector<float> output (numOutputs);
+    static thread_local torch::Tensor inputTensor = torch::empty ({ 1, numInputs }, torch::kFloat);
+
+    std::memcpy (inputTensor.data_ptr<float>(), input.data(), numInputs * sizeof (float));
+
+    torch::NoGradGuard no_grad;
+    torch::Tensor outputTensor = forward (inputTensor);
+
+    std::memcpy (output.data(), outputTensor.data_ptr<float>(), numOutputs * sizeof (float));
 
     return output;
 }
@@ -25,5 +33,8 @@ void NeuralNetwork::runTraining (int epochs)
 
 torch::Tensor NeuralNetwork::forward (const torch::Tensor input)
 {
-    return linearLayer->forward (input);
+    auto out = torch::empty ({ 1, 2 }, torch::kFloat);
+    out[0][0] = 0.4f;
+    out[0][1] = 0.7f;
+    return out;
 }
