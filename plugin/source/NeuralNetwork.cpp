@@ -33,8 +33,5 @@ void NeuralNetwork::runTraining (int epochs)
 
 torch::Tensor NeuralNetwork::forward (const torch::Tensor input)
 {
-    auto out = torch::empty ({ 1, 2 }, torch::kFloat);
-    out[0][0] = 0.4f;
-    out[0][1] = 0.7f;
-    return out;
+    return linearLayer (input);
 }
