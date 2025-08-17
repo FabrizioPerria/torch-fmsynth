@@ -146,6 +146,27 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (modulationSuperKnobSlider);
     modulationSuperKnobSlider.setRange (0.001, 1.0, 0.01);
     modulationSuperKnobSlider.setValue (0.5);
+
+    // ============================================================================================
+    // TRAINING MODE BUTTON
+    auto& trainingModeParam = *apvts.getRawParameterValue ("main_training_mode");
+    addAndMakeVisible (trainingModeButton);
+    trainingModeButton.setButtonText ("Training Mode");
+    trainingModeButton.setToggleState (trainingModeParam.load() > 0.5f, juce::dontSendNotification);
+    trainingModeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                     "main_training_mode",
+                                                                                                     trainingModeButton);
+
+    // ============================================================================================
+    // ADD TRAINING DATA BUTTON
+    auto& addTrainingDataParam = *apvts.getRawParameterValue ("add_training_data");
+    addAndMakeVisible (addTrainingDataButton);
+    addTrainingDataButton.setButtonText ("Add Training Data");
+    addTrainingDataButton.setClickingTogglesState (false);
+    addTrainingDataButton.setToggleState (addTrainingDataParam.load() > 0.5f, juce::dontSendNotification);
+    addTrainingDataAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                        "add_training_data",
+                                                                                                        addTrainingDataButton);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
@@ -210,37 +231,11 @@ void AudioPluginAudioProcessorEditor::resized()
 
     modulationSuperKnobLabel.setBounds (labelX, labelY, labelWidth, height);
     modulationSuperKnobSlider.setBounds (sliderX, labelY, sliderWidth, height);
-    // labelY += 40;
-    //
-    // modulationTorchKnobLabel.setBounds (labelX, labelY, labelWidth, height);
-    // modulationTorchKnobSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 60;
+
+    trainingModeButton.setBounds (labelX, labelY, sliderWidth, height);
+    addTrainingDataButton.setBounds (sliderWidth - 200, labelY, 150, height);
+    labelY += 40;
 }
 
-void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
-{
-    //     if (slider == &modulationTorchKnobSlider)
-    //     {
-    //         double torchKnobValue = modulationTorchKnobSlider.getValue();
-    //         double knobMin = modulationTorchKnobSlider.getRange().getStart();
-    //         double knobMax = modulationTorchKnobSlider.getRange().getEnd();
-    //         double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
-    //         std::vector<std::string> parametersToControl { "main_modulation_ratio", "main_mod_amplitude" };
-    //
-    //         for (auto& s : parametersToControl)
-    //         {
-    //             auto& modSlider = sliders[s];
-    //             auto& parameter = *apvts.getParameter (s);
-    //             double high = modSlider->getMaxValue();
-    //             double low = modSlider->getMinValue();
-    //
-    //             double weight = high - low;
-    //             double bias = low;
-    //
-    //             double value = weight * knobNormalized + bias;
-    //
-    //             parameter.beginChangeGesture();
-    //             parameter.setValueNotifyingHost (parameter.convertFrom0to1 ((float) value));
-    //             parameter.endChangeGesture();
-    //         }
-    //     }
-}
+void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider) {}

@@ -252,5 +252,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
                                                              10.0f,
                                                              0.5f));
 
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "main_training_mode", 1 }, "Training Mode", false));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "add_training_data", 1 }, "Add Training Data", false));
+
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "run_training", 1 }, "Run Training", false));
+
     return layout;
 }

@@ -62,6 +62,12 @@ private:
 
     std::map<juce::String, juce::Slider*> sliders;
 
+    juce::ToggleButton trainingModeButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> trainingModeAttachment;
+
+    juce::TextButton addTrainingDataButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> addTrainingDataAttachment;
+
     juce::Label modulationSuperKnobLabel;
     SuperSlider modulationSuperKnobSlider;
 
