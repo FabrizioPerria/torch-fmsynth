@@ -1,41 +1,44 @@
 #pragma once
 
+#include "NeuralNetwork.h"
 #include "juce_audio_processors/juce_audio_processors.h"
 #include <JuceHeader.h>
+#include <torch/nn/modules/linear.h>
 
 class SuperSlider : public juce::Slider
 {
 public:
-    SuperSlider (juce::AudioProcessorValueTreeState& apvts) : juce::Slider()
+    SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
     {
-        modulationRatio = apvts.getParameter ("main_modulation_ratio");
-        auto modulationRatioRange = apvts.getParameterRange ("main_modulation_ratio");
-        modulationDepth = apvts.getParameter ("main_mod_amplitude");
-        auto modulationDepthRange = apvts.getParameterRange ("main_mod_amplitude");
-
-        onValueChange = [this, modulationRatioRange, modulationDepthRange]()
+        onValueChange = [this, apvts, sliders]()
         {
-            auto value = (float) getValue();
+            auto range = this->getRange();
+            auto knobMin = range.getStart();
+            auto knobMax = range.getEnd();
 
-            // Small slider values decrease the ratio and increase the depth
-            if (modulationRatio != nullptr)
+            double torchKnobValue = this->getValue();
+            double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
+
+            std::vector<float> input = { (float) knobNormalized };
+            auto out = net.forward (input);
+
+            for (unsigned long i = 0; i < parametersToControl.size(); ++i)
             {
-                auto newRatio = 1.0 - (value / 10.0);
-                modulationRatio->beginChangeGesture();
-                modulationRatio->setValueNotifyingHost (newRatio);
-                modulationRatio->endChangeGesture();
-            }
-            if (modulationDepth != nullptr)
-            {
-                auto newDepth = value / 10.0;
-                modulationDepth->beginChangeGesture();
-                modulationDepth->setValueNotifyingHost (newDepth);
-                modulationDepth->endChangeGesture();
+                auto s = parametersToControl[i];
+
+                auto parameter = apvts->getParameter (s);
+                parameter->beginChangeGesture();
+                parameter->setValueNotifyingHost (out[i]);
+                parameter->endChangeGesture();
             }
         };
     }
 
+    void addParameterToControl (const std::string& parameterName) { parametersToControl.push_back (parameterName); }
+
 private:
-    juce::RangedAudioParameter* modulationRatio = nullptr;
-    juce::RangedAudioParameter* modulationDepth = nullptr;
+    std::vector<std::string> parametersToControl;
+    NeuralNetwork net { 1, 2 };
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };

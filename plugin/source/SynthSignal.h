@@ -9,7 +9,7 @@ class Signal : private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     Signal (std::function<double (double)> generateFunc, double appSampleRate, juce::String signalName, AudioProcessorValueTreeState& state)
-        : apvts (state), name (signalName), sampleRate (appSampleRate), envelope (std::make_unique<Envelope> (name, state))
+        : name (signalName), sampleRate (appSampleRate), envelope (std::make_unique<Envelope> (name, state)), apvts (state)
     {
         setGenerateFunction (generateFunc);
 

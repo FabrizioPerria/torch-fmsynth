@@ -244,7 +244,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_modulation_ratio", 1 },
                                                              "Modulation Ratio",
                                                              0.01f,
-                                                             10.0f,
+                                                             1.0f,
                                                              0.5f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "main_mod_amplitude", 1 },
                                                              "Modulation Depth",
