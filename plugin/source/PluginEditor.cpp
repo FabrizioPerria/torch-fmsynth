@@ -156,6 +156,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     trainingModeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
                                                                                                      "main_training_mode",
                                                                                                      trainingModeButton);
+    trainingModeButton.addListener (this);
 
     // ============================================================================================
     // ADD TRAINING DATA BUTTON
@@ -167,6 +168,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addTrainingDataAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
                                                                                                         "add_training_data",
                                                                                                         addTrainingDataButton);
+    addTrainingDataButton.addListener (this);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
@@ -239,3 +241,14 @@ void AudioPluginAudioProcessorEditor::resized()
 }
 
 void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider) {}
+
+void AudioPluginAudioProcessorEditor::buttonClicked (juce::Button* button)
+{
+    if (button == &addTrainingDataButton)
+    {
+    }
+    else if (button == &trainingModeButton)
+    {
+        modulationSuperKnobSlider.setTrainingMode (trainingModeButton.getToggleState());
+    }
+}

@@ -10,8 +10,12 @@ class SuperSlider : public juce::Slider
 public:
     SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
     {
+        setTrainingMode (apvts->getRawParameterValue ("main_training_mode")->load() > 0.5f);
+
         onValueChange = [this, apvts, sliders]()
         {
+            if (trainingMode)
+                return;
             auto range = this->getRange();
             auto knobMin = range.getStart();
             auto knobMax = range.getEnd();
@@ -36,9 +40,16 @@ public:
 
     void addParameterToControl (const std::string& parameterName) { parametersToControl.push_back (parameterName); }
 
+    void setTrainingMode (bool mode)
+    {
+        trainingMode = mode;
+        setColour (juce::Slider::ColourIds::thumbColourId, trainingMode ? juce::Colours::red : juce::Colours::blue);
+    }
+
 private:
     std::vector<std::string> parametersToControl;
     NeuralNetwork net { 1, 2 };
+    bool trainingMode;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };
