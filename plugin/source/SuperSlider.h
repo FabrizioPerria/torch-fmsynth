@@ -18,9 +18,7 @@ public:
 
             double torchKnobValue = this->getValue();
             double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
-            // torch::Tensor in = torch::empty ({ 1, 1 }, torch::kFloat);
-            // in[0][0] = (float) knobNormalized;
-            // torch::Tensor out = net (in);
+
             std::vector<float> input = { (float) knobNormalized };
             auto out = net.forward (input);
 
@@ -32,20 +30,6 @@ public:
                 parameter->beginChangeGesture();
                 parameter->setValueNotifyingHost (out[i]);
                 parameter->endChangeGesture();
-
-                // auto parameter = apvts->getParameter (s);
-                // auto slider = sliders->at (s);
-                // double high = slider->getMaxValue();
-                // double low = slider->getMinValue();
-                //
-                // double weight = high - low;
-                // double bias = low;
-                //
-                // double value = weight * knobNormalized + bias;
-                //
-                // parameter->beginChangeGesture();
-                // parameter->setValueNotifyingHost (((float) parameter->convertTo0to1 ((float) value)));
-                // parameter->endChangeGesture();
             }
         };
     }

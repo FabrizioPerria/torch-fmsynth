@@ -16,6 +16,7 @@ private:
     int numInputs;
     int numOutputs;
     torch::nn::Linear linearLayer { nullptr };
+    torch::nn::Softmax softmaxLayer { nullptr };
     torch::Tensor forward (const torch::Tensor input);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuralNetwork)

@@ -5,6 +5,8 @@ NeuralNetwork::NeuralNetwork (int inputSize, int outputSize) : numInputs (inputS
     auto net = torch::nn::Linear (numInputs, numOutputs);
     net->to (torch::kCPU);
     linearLayer = register_module ("linear", net);
+
+    softmaxLayer = register_module ("softmax", torch::nn::Softmax (1));
 }
 
 std::vector<float> NeuralNetwork::forward (const std::vector<float>& input)
@@ -33,5 +35,7 @@ void NeuralNetwork::runTraining (int epochs)
 
 torch::Tensor NeuralNetwork::forward (const torch::Tensor input)
 {
-    return linearLayer (input);
+    auto out = linearLayer (input);
+    out = softmaxLayer (out);
+    return out;
 }
