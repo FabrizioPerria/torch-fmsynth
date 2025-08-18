@@ -1,6 +1,5 @@
 #pragma once
 
-#include <JuceHeader.h>
 #include <torch/nn/module.h>
 #include <torch/torch.h>
 
@@ -22,5 +21,5 @@ private:
     std::vector<torch::Tensor> trainingInputs;
     std::vector<torch::Tensor> trainingTargets;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuralNetwork)
+    std::unique_ptr<torch::optim::SGD> optimizer { nullptr };
 };

@@ -7,6 +7,8 @@ NeuralNetwork::NeuralNetwork (int inputSize, int outputSize) : numInputs (inputS
     linearLayer = register_module ("linear", net);
 
     softmaxLayer = register_module ("softmax", torch::nn::Softmax (1));
+
+    optimizer = std::make_unique<torch::optim::SGD> (parameters(), 0.01);
 }
 
 std::vector<float> NeuralNetwork::forward (const std::vector<float>& input)
@@ -37,8 +39,22 @@ void NeuralNetwork::addTrainingData (const std::vector<float>& input, const std:
 
 void NeuralNetwork::runTraining (int epochs)
 {
+    if (trainingInputs.empty() || trainingTargets.empty())
+    {
+        std::cerr << "No training data available!" << std::endl;
+        return;
+    }
+    torch::Tensor input = torch::cat (trainingInputs).reshape ({ static_cast<int64_t> (trainingInputs.size()), numInputs });
+    torch::Tensor target = torch::cat (trainingTargets).reshape ({ static_cast<int64_t> (trainingTargets.size()), numOutputs });
+
     for (int i = 0; i < epochs; ++i)
     {
+        optimizer->zero_grad();
+        auto lossResult = torch::mse_loss (forward (input), target);
+        float lossValue = lossResult.item<float>();
+        std::cout << "Epoch " << i << ", Loss: " << lossValue << std::endl;
+        lossResult.backward();
+        optimizer->step();
     }
 }
 

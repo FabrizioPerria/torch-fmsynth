@@ -64,6 +64,10 @@ public:
     {
         trainingMode = mode;
         setColour (juce::Slider::ColourIds::thumbColourId, trainingMode ? juce::Colours::red : juce::Colours::blue);
+        if (! trainingMode)
+        {
+            net.runTraining (1000);
+        }
     }
 
 private:
