@@ -129,11 +129,8 @@ int main()
     NeuralNetwork net (1, 2);
     for (int i = 0; i < 1000; ++i)
     {
-        auto line = getnoisyLine (10);
-        std::vector<float> input = { line[0].first };
-        std::vector<float> target = { line[0].second, line[1].second };
-        net.addTrainingData (input, target);
+        net.addTrainingData ({ i / 10.0f }, { i / 5.0f, i / 3.0f });
     }
-    net.runTraining (1000);
+    net.runTraining (1000000);
     return 0;
 }

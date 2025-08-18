@@ -1,6 +1,7 @@
 #pragma once
 
 #include <torch/nn/module.h>
+#include <torch/nn/modules/activation.h>
 #include <torch/torch.h>
 
 class NeuralNetwork : public torch::nn::Module
@@ -14,8 +15,11 @@ public:
 private:
     int numInputs;
     int numOutputs;
-    torch::nn::Linear linearLayer { nullptr };
-    torch::nn::Softmax softmaxLayer { nullptr };
+    torch::nn::Linear linearLayer1 { nullptr };
+    torch::nn::Sigmoid sigmoidLayer { nullptr };
+    torch::nn::Linear linearLayer2 { nullptr };
+
+    // torch::nn::Softmax softmaxLayer { nullptr };
     torch::Tensor forward (const torch::Tensor input);
 
     std::vector<torch::Tensor> trainingInputs;
