@@ -8,11 +8,11 @@
 class SuperSlider : public juce::Slider
 {
 public:
-    SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
+    SuperSlider (juce::AudioProcessorValueTreeState* state, std::map<juce::String, juce::Component*>* components) : apvts (state)
     {
         setTrainingMode (apvts->getRawParameterValue ("main_training_mode")->load() > 0.5f);
 
-        onValueChange = [this, apvts, sliders]()
+        onValueChange = [this, components]()
         {
             if (trainingMode)
                 return;
@@ -40,6 +40,26 @@ public:
 
     void addParameterToControl (const std::string& parameterName) { parametersToControl.push_back (parameterName); }
 
+    void sampleCurrentPosition()
+    {
+        if (trainingMode)
+        {
+            auto range = this->getRange();
+            auto knobMin = range.getStart();
+            auto knobMax = range.getEnd();
+            double torchKnobValue = this->getValue();
+            double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
+            std::vector<float> input = { (float) knobNormalized };
+            std::vector<float> output;
+            for (const auto& paramName : parametersToControl)
+            {
+                auto parameter = apvts->getParameter (paramName);
+                output.push_back (parameter->getValue());
+            }
+            net.addTrainingData (input, output);
+        }
+    }
+
     void setTrainingMode (bool mode)
     {
         trainingMode = mode;
@@ -47,6 +67,7 @@ public:
     }
 
 private:
+    juce::AudioProcessorValueTreeState* apvts;
     std::vector<std::string> parametersToControl;
     NeuralNetwork net { 1, 2 };
     bool trainingMode;
