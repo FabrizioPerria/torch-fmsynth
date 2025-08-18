@@ -1,7 +1,7 @@
 #pragma once
 
-#include <JuceHeader.h>
 #include <torch/nn/module.h>
+#include <torch/nn/modules/activation.h>
 #include <torch/torch.h>
 
 class NeuralNetwork : public torch::nn::Module
@@ -15,9 +15,15 @@ public:
 private:
     int numInputs;
     int numOutputs;
-    torch::nn::Linear linearLayer { nullptr };
-    torch::nn::Softmax softmaxLayer { nullptr };
+    torch::nn::Linear linearLayer1 { nullptr };
+    torch::nn::Sigmoid sigmoidLayer { nullptr };
+    torch::nn::Linear linearLayer2 { nullptr };
+
+    // torch::nn::Softmax softmaxLayer { nullptr };
     torch::Tensor forward (const torch::Tensor input);
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuralNetwork)
+    std::vector<torch::Tensor> trainingInputs;
+    std::vector<torch::Tensor> trainingTargets;
+
+    std::unique_ptr<torch::optim::SGD> optimizer { nullptr };
 };

@@ -4,7 +4,7 @@
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS()), modulationSuperKnobSlider (&apvts, &sliders)
+    : AudioProcessorEditor (&p), processorRef (p), apvts (p.getAPVTS()), modulationSuperKnobSlider (&apvts, &components)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -32,7 +32,6 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     amplitudeSlider.setValue (amplitudeParam.load());
     amplitudeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_amplitude", amplitudeSlider);
 
-    sliders.insert (std::make_pair ("main_amplitude", &amplitudeSlider));
     // ============================================================================================
     // MODULATION RATIO SLIDER
 
@@ -48,7 +47,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     modulationRatioAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
                                                                                                         "main_modulation_ratio",
                                                                                                         modulationRatioSlider);
-    sliders.insert (std::make_pair ("main_modulation_ratio", &modulationRatioSlider));
+
     // ============================================================================================
     // ENVELOPE BUTTON
 
@@ -70,7 +69,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     attackSlider.setRange (attackParamRange.start, attackParamRange.end, 0.01);
     attackSlider.setValue (attackParam.load());
     attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_envelope_attack", attackSlider);
-    sliders.insert (std::make_pair ("main_envelope_attack", &attackSlider));
+
     // ============================================================================================
     // ENVELOPE DECAY SLIDER
 
@@ -82,7 +81,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     decaySlider.setRange (decayParamRange.start, decayParamRange.end, 0.01);
     decaySlider.setValue (decayParam.load());
     decayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts, "main_envelope_decay", decaySlider);
-    sliders.insert (std::make_pair ("main_envelope_decay", &decaySlider));
+
     // ============================================================================================
     // ENVELOPE SUSTAIN SLIDER
 
@@ -96,10 +95,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     sustainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
                                                                                                 "main_envelope_sustain",
                                                                                                 sustainSlider);
-    sliders.insert (std::make_pair ("main_envelope_sustain", &sustainSlider));
+
     // ============================================================================================
     // ENVELOPE RELEASE SLIDER
-
     addAndMakeVisible (releaseLabel);
     releaseLabel.setText ("Release", juce::dontSendNotification);
     auto& releaseParam = *apvts.getRawParameterValue ("main_envelope_release");
@@ -110,7 +108,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
                                                                                                 "main_envelope_release",
                                                                                                 releaseSlider);
-    sliders.insert (std::make_pair ("main_envelope_release", &releaseSlider));
+
     // ============================================================================================
     // MODULATION BUTTON
 
@@ -136,7 +134,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     modulationDepthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (apvts,
                                                                                                         "main_mod_amplitude",
                                                                                                         modulationDepthSlider);
-    sliders.insert (std::make_pair ("main_mod_amplitude", &modulationDepthSlider));
+
     // ============================================================================================
     // MODULATION SUPERKNOB
     addAndMakeVisible (modulationSuperKnobLabel);
@@ -146,6 +144,29 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible (modulationSuperKnobSlider);
     modulationSuperKnobSlider.setRange (0.001, 1.0, 0.01);
     modulationSuperKnobSlider.setValue (0.5);
+
+    // ============================================================================================
+    // TRAINING MODE BUTTON
+    auto& trainingModeParam = *apvts.getRawParameterValue ("main_training_mode");
+    addAndMakeVisible (trainingModeButton);
+    trainingModeButton.setButtonText ("Training Mode");
+    trainingModeButton.setToggleState (trainingModeParam.load() > 0.5f, juce::dontSendNotification);
+    trainingModeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                     "main_training_mode",
+                                                                                                     trainingModeButton);
+    trainingModeButton.addListener (this);
+
+    // ============================================================================================
+    // ADD TRAINING DATA BUTTON
+    auto& addTrainingDataParam = *apvts.getRawParameterValue ("add_training_data");
+    addAndMakeVisible (addTrainingDataButton);
+    addTrainingDataButton.setButtonText ("Add Training Data");
+    addTrainingDataButton.setClickingTogglesState (false);
+    addTrainingDataButton.setToggleState (addTrainingDataParam.load() > 0.5f, juce::dontSendNotification);
+    addTrainingDataAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (apvts,
+                                                                                                        "add_training_data",
+                                                                                                        addTrainingDataButton);
+    addTrainingDataButton.addListener (this);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
@@ -210,37 +231,23 @@ void AudioPluginAudioProcessorEditor::resized()
 
     modulationSuperKnobLabel.setBounds (labelX, labelY, labelWidth, height);
     modulationSuperKnobSlider.setBounds (sliderX, labelY, sliderWidth, height);
-    // labelY += 40;
-    //
-    // modulationTorchKnobLabel.setBounds (labelX, labelY, labelWidth, height);
-    // modulationTorchKnobSlider.setBounds (sliderX, labelY, sliderWidth, height);
+    labelY += 60;
+
+    trainingModeButton.setBounds (labelX, labelY, sliderWidth, height);
+    addTrainingDataButton.setBounds (sliderWidth - 200, labelY, 150, height);
+    labelY += 40;
 }
 
-void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider)
+void AudioPluginAudioProcessorEditor::sliderValueChanged (juce::Slider* slider) {}
+
+void AudioPluginAudioProcessorEditor::buttonClicked (juce::Button* button)
 {
-    //     if (slider == &modulationTorchKnobSlider)
-    //     {
-    //         double torchKnobValue = modulationTorchKnobSlider.getValue();
-    //         double knobMin = modulationTorchKnobSlider.getRange().getStart();
-    //         double knobMax = modulationTorchKnobSlider.getRange().getEnd();
-    //         double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
-    //         std::vector<std::string> parametersToControl { "main_modulation_ratio", "main_mod_amplitude" };
-    //
-    //         for (auto& s : parametersToControl)
-    //         {
-    //             auto& modSlider = sliders[s];
-    //             auto& parameter = *apvts.getParameter (s);
-    //             double high = modSlider->getMaxValue();
-    //             double low = modSlider->getMinValue();
-    //
-    //             double weight = high - low;
-    //             double bias = low;
-    //
-    //             double value = weight * knobNormalized + bias;
-    //
-    //             parameter.beginChangeGesture();
-    //             parameter.setValueNotifyingHost (parameter.convertFrom0to1 ((float) value));
-    //             parameter.endChangeGesture();
-    //         }
-    //     }
+    if (button == &addTrainingDataButton)
+    {
+        modulationSuperKnobSlider.sampleCurrentPosition();
+    }
+    else if (button == &trainingModeButton)
+    {
+        modulationSuperKnobSlider.setTrainingMode (trainingModeButton.getToggleState());
+    }
 }

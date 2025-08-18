@@ -8,10 +8,14 @@
 class SuperSlider : public juce::Slider
 {
 public:
-    SuperSlider (juce::AudioProcessorValueTreeState* apvts, std::map<juce::String, juce::Slider*>* sliders)
+    SuperSlider (juce::AudioProcessorValueTreeState* state, std::map<juce::String, juce::Component*>* components) : apvts (state)
     {
-        onValueChange = [this, apvts, sliders]()
+        setTrainingMode (apvts->getRawParameterValue ("main_training_mode")->load() > 0.5f);
+
+        onValueChange = [this, components]()
         {
+            if (trainingMode)
+                return;
             auto range = this->getRange();
             auto knobMin = range.getStart();
             auto knobMax = range.getEnd();
@@ -36,9 +40,41 @@ public:
 
     void addParameterToControl (const std::string& parameterName) { parametersToControl.push_back (parameterName); }
 
+    void sampleCurrentPosition()
+    {
+        if (trainingMode)
+        {
+            auto range = this->getRange();
+            auto knobMin = range.getStart();
+            auto knobMax = range.getEnd();
+            double torchKnobValue = this->getValue();
+            double knobNormalized = (torchKnobValue - knobMin) / (knobMax - knobMin);
+            std::vector<float> input = { (float) knobNormalized };
+            std::vector<float> output;
+            for (const auto& paramName : parametersToControl)
+            {
+                auto parameter = apvts->getParameter (paramName);
+                output.push_back (parameter->getValue());
+            }
+            net.addTrainingData (input, output);
+        }
+    }
+
+    void setTrainingMode (bool mode)
+    {
+        trainingMode = mode;
+        setColour (juce::Slider::ColourIds::thumbColourId, trainingMode ? juce::Colours::red : juce::Colours::blue);
+        if (! trainingMode)
+        {
+            net.runTraining (100000);
+        }
+    }
+
 private:
+    juce::AudioProcessorValueTreeState* apvts;
     std::vector<std::string> parametersToControl;
     NeuralNetwork net { 1, 2 };
+    bool trainingMode;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSlider)
 };

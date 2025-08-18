@@ -1,3 +1,4 @@
+#include "NeuralNetwork.h"
 #include <ATen/ops/mse_loss.h>
 #include <iostream>
 #include <random>
@@ -91,39 +92,45 @@ torch::Tensor vec2tensor (const std::vector<float>& vec)
 
 int main()
 {
-    int count = 1000;
-    auto line = getnoisyLine (count);
+    // int count = 1000;
+    // auto line = getnoisyLine (count);
+    //
+    // std::cout << "Creating a simple model..." << std::endl;
+    // int in { 1 }, out { 1 };
+    // auto net = makeModel (in, out);
+    //
+    // auto optimizer = torch::optim::SGD (net->parameters(), /*lr=*/0.01);
+    //
+    // std::vector<float> xs = std::vector<float> (count);
+    // std::transform (line.begin(), line.end(), xs.begin(), [] (const auto& x) { return x.first; });
+    // auto input = vec2tensor (xs);
+    //
+    // std::vector<float> ys = std::vector<float> (count);
+    // std::transform (line.begin(), line.end(), ys.begin(), [] (const auto& y) { return y.second; });
+    // auto target = vec2tensor (ys);
+    //
+    // float lossValue = 1000.0f;
+    // int cnt = 0;
+    // while (lossValue > 0.5f)
+    // {
+    //     cnt++;
+    //     auto output = net->forward (input);
+    //
+    //     torch::Tensor loss = torch::mse_loss (output, target);
+    //     lossValue = loss.item<float>();
+    //
+    //     optimizer.zero_grad();
+    //     loss.backward();
+    //     optimizer.step();
+    // }
+    //
+    // std::cout << "Training completed in " << cnt << " iterations with final loss: " << lossValue << std::endl;
 
-    std::cout << "Creating a simple model..." << std::endl;
-    int in { 1 }, out { 1 };
-    auto net = makeModel (in, out);
-
-    auto optimizer = torch::optim::SGD (net->parameters(), /*lr=*/0.01);
-
-    std::vector<float> xs = std::vector<float> (count);
-    std::transform (line.begin(), line.end(), xs.begin(), [] (const auto& x) { return x.first; });
-    auto input = vec2tensor (xs);
-
-    std::vector<float> ys = std::vector<float> (count);
-    std::transform (line.begin(), line.end(), ys.begin(), [] (const auto& y) { return y.second; });
-    auto target = vec2tensor (ys);
-
-    float lossValue = 1000.0f;
-    int cnt = 0;
-    while (lossValue > 0.5f)
+    NeuralNetwork net (1, 2);
+    for (int i = 0; i < 1000; ++i)
     {
-        cnt++;
-        auto output = net->forward (input);
-
-        torch::Tensor loss = torch::mse_loss (output, target);
-        lossValue = loss.item<float>();
-
-        optimizer.zero_grad();
-        loss.backward();
-        optimizer.step();
+        net.addTrainingData ({ i / 10.0f }, { i / 5.0f, i / 3.0f });
     }
-
-    std::cout << "Training completed in " << cnt << " iterations with final loss: " << lossValue << std::endl;
-
+    net.runTraining (1000000);
     return 0;
 }

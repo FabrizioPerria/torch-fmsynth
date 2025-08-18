@@ -5,7 +5,7 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, public juce::Slider::Listener
+class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, public juce::Slider::Listener, public juce::Button::Listener
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -15,6 +15,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void sliderValueChanged (juce::Slider* slider) override;
+    void buttonClicked (juce::Button* button) override;
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -60,7 +61,22 @@ private:
     juce::Slider modulationDepthSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachment;
 
-    std::map<juce::String, juce::Slider*> sliders;
+    std::map<juce::String, juce::Component*> components = { { "main_enabled", &enableSignalButton },
+                                                            { "main_amplitude", &amplitudeSlider },
+                                                            { "main_envelope_enabled", &enableEnvelopeButton },
+                                                            { "main_envelope_attack", &attackSlider },
+                                                            { "main_envelope_decay", &decaySlider },
+                                                            { "main_envelope_sustain", &sustainSlider },
+                                                            { "main_envelope_release", &releaseSlider },
+                                                            { "main_mod_enabled", &enableModulationButton },
+                                                            { "main_modulation_ratio", &modulationRatioSlider },
+                                                            { "main_modulation_depth", &modulationDepthSlider } };
+
+    juce::ToggleButton trainingModeButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> trainingModeAttachment;
+
+    juce::TextButton addTrainingDataButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> addTrainingDataAttachment;
 
     juce::Label modulationSuperKnobLabel;
     SuperSlider modulationSuperKnobSlider;
